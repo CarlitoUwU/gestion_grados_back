@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: masters-api
+
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:20MB}
+      max-request-size: ${MAX_REQUEST_SIZE:25MB}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${GOOGLE_OAUTH_ISSUER_URI:https://accounts.google.com}
+
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+          lob:
+            non_contextual_creation: true
+        order_inserts: true
+        order_updates: true
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+app:
+  seed:
+    admin-email: ${ADMIN_EMAIL:}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /api/docs/openapi.json
+  swagger-ui:
+    path: /api/docs
+    operations-sorter: method
+    tags-sorter: alpha
+    persist-authorization: true
+  show-actuator: false

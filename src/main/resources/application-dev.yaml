@@ -1,0 +1,47 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/postgres}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:none}
+    show-sql: ${JPA_SHOW_SQL:true}
+  devtools:
+    restart:
+      enabled: true
+      poll-interval: 2s
+      quiet-period: 1s
+    livereload:
+      enabled: true
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
+      include-stacktrace: always
+
+logging:
+  level:
+    root: INFO
+    com.claudecoders: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

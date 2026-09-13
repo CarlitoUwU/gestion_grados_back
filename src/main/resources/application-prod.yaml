@@ -1,0 +1,67 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    baseline-on-migrate: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          audiences:
+            - ${GOOGLE_OAUTH_AUDIENCE:${GOOGLE_OAUTH_CLIENT_ID}}
+  web:
+    error:
+      include-message: never
+      include-binding-errors: never
+      include-stacktrace: never
+
+server:
+  compression:
+    enabled: true
+    mime-types:
+      - application/json
+      - application/xml
+      - text/html
+      - text/plain
+
+logging:
+  level:
+    root: WARN
+    com.claudecoders: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+          - prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  observations:
+    key-values:
+      application: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

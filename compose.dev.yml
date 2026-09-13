@@ -1,0 +1,39 @@
+name: grado-dev
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: grado-bck
+    ports:
+      - "${PORT:-8080}:8080"
+      - "5005:5005"
+      - "35729:35729"
+    volumes:
+      - .:/app
+      - ./.gradle/dependencies:/home/gradle/.gradle
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: grado-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5431:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U root -d postgres" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
