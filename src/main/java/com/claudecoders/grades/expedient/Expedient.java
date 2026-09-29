@@ -1,7 +1,5 @@
 package com.claudecoders.grades.expedient;
 
-import java.time.LocalDate;
-
 import com.claudecoders.grades.expedientstatus.ExpedientStatus;
 import com.claudecoders.grades.graduate.Graduate;
 import com.claudecoders.grades.modality.DegreeModality;
@@ -16,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "expedients")

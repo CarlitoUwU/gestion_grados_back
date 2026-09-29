@@ -14,28 +14,32 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
+    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment)
+            throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(
+                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
         if (environment.acceptsProfiles(Profiles.of("dev", "test"))) {
             http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
         } else {
-            http.authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers(
-                            "/health",
-                            "/actuator/health",
-                            "/actuator/health/**",
-                            "/api/docs",
-                            "/api/docs/**",
-                            "/api/swagger-ui/**",
-                            "/swagger-ui/**",
-                            "/v3/api-docs/**"
-                    ).permitAll()
-                    .anyRequest().authenticated());
+            http.authorizeHttpRequests(
+                    authorize ->
+                            authorize
+                                    .requestMatchers(
+                                            "/health",
+                                            "/actuator/health",
+                                            "/actuator/health/**",
+                                            "/api/docs",
+                                            "/api/docs/**",
+                                            "/api/swagger-ui/**",
+                                            "/swagger-ui/**",
+                                            "/v3/api-docs/**")
+                                    .permitAll()
+                                    .anyRequest()
+                                    .authenticated());
         }
 
         return http.build();

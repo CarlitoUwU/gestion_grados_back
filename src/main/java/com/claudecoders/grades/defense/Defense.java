@@ -1,7 +1,5 @@
 package com.claudecoders.grades.defense;
 
-import java.time.LocalDate;
-
 import com.claudecoders.grades.expedient.Expedient;
 import com.claudecoders.grades.shared.audit.BaseEntity;
 import jakarta.persistence.Column;
@@ -13,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "defenses")

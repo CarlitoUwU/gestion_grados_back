@@ -1,7 +1,5 @@
 package com.claudecoders.grades.resolution;
 
-import java.time.LocalDate;
-
 import com.claudecoders.grades.expedient.Expedient;
 import com.claudecoders.grades.shared.audit.BaseEntity;
 import jakarta.persistence.Column;
@@ -14,11 +12,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDate;
 
 @Entity
-@Table(name = "resolutions", uniqueConstraints = {
-        @UniqueConstraint(name = "uq_resolutions_expedient_number", columnNames = { "expedient_id", "number" })
-})
+@Table(
+        name = "resolutions",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uq_resolutions_expedient_number",
+                    columnNames = {"expedient_id", "number"})
+        })
 public class Resolution extends BaseEntity {
 
     @Id

@@ -18,9 +18,13 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "jury_members", uniqueConstraints = {
-        @UniqueConstraint(name = "uq_jury_members_expedient_teacher", columnNames = { "expedient_id", "teacher_id" })
-})
+@Table(
+        name = "jury_members",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uq_jury_members_expedient_teacher",
+                    columnNames = {"expedient_id", "teacher_id"})
+        })
 public class JuryMember extends CreatedEntity {
 
     @Id
