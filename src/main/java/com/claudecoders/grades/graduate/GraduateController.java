@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/graduates")
-@Tag(name = "Graduates", description = "CRUD de egresados")
+@Tag(name = "Graduates", description = "Graduate CRUD")
 public class GraduateController {
     private final GraduateService service;
 

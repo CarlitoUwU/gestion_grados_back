@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/resolutions")
-@Tag(name = "Resolutions", description = "CRUD de resoluciones")
+@Tag(name = "Resolutions", description = "Resolution CRUD")
 public class ResolutionController {
     private final ResolutionService service;
 

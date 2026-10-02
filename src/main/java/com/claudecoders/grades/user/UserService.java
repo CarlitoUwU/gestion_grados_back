@@ -43,6 +43,13 @@ public class UserService {
         repository.delete(get(id));
     }
 
+    @Transactional
+    public UserResponse setActive(Long id, boolean active) {
+        User value = get(id);
+        value.setActive(active);
+        return UserResponse.from(value);
+    }
+
     private User get(Long id) {
         return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
@@ -50,6 +57,8 @@ public class UserService {
     private void check(UserRequest r, Long id) {
         if (repository.existsByEmailIgnoreCase(r.email().trim()) && !sameEmail(r.email(), id))
             throw new ConflictException("Ya existe un User con ese email");
+        if (!"ADMIN_GT".equals(r.role().trim()))
+            throw new ConflictException("El único rol permitido actualmente es ADMIN_GT");
         if (r.googleSubject() != null
                 && !r.googleSubject().isBlank()
                 && repository.existsByGoogleSubjectAndIdNot(

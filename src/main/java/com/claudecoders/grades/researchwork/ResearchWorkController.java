@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/research-works")
-@Tag(name = "ResearchWorks", description = "CRUD de trabajos de investigación")
+@Tag(name = "Research works", description = "Research work CRUD")
 public class ResearchWorkController {
     private final ResearchWorkService service;
 

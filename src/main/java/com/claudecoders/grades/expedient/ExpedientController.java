@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/expedients")
-@Tag(name = "Expedients", description = "CRUD de expedientes")
+@Tag(name = "Expedients", description = "Expedient CRUD")
 public class ExpedientController {
     private final ExpedientService service;
 

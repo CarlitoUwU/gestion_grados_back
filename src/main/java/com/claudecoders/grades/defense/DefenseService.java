@@ -5,6 +5,7 @@ import com.claudecoders.grades.defense.dto.DefenseResponse;
 import com.claudecoders.grades.shared.exception.ConflictException;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.shared.service.EntityReferenceResolver;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,12 +32,14 @@ public class DefenseService {
     @Transactional
     public DefenseResponse create(DefenseRequest r) {
         checkExpedient(r.expedientId(), null);
+        checkBusinessRules(r);
         return DefenseResponse.from(repository.save(toEntity(new Defense(), r)));
     }
 
     @Transactional
     public DefenseResponse update(Long id, DefenseRequest r) {
         checkExpedient(r.expedientId(), id);
+        checkBusinessRules(r);
         return DefenseResponse.from(toEntity(get(id), r));
     }
 
@@ -55,6 +58,19 @@ public class DefenseService {
         if (repository.existsByExpedientId(expedientId)
                 && (id == null || !get(id).getExpedient().getId().equals(expedientId)))
             throw new ConflictException("El expediente ya tiene una Defense");
+    }
+
+    private void checkBusinessRules(DefenseRequest r) {
+        var expedient = refs.expedient(r.expedientId());
+        if (r.defenseDate() != null && r.defenseDate().isBefore(expedient.getStartDate()))
+            throw new ConflictException(
+                    "La fecha de sustentación no puede ser anterior al inicio del expediente");
+        if (r.defenseDate() != null
+                && r.defenseDate().isAfter(LocalDate.now())
+                && r.result() != null
+                && !r.result().isBlank()
+                && !"Pendiente".equalsIgnoreCase(r.result().trim()))
+            throw new ConflictException("Una sustentación futura solo puede tener resultado Pendiente");
     }
 
     private Defense toEntity(Defense v, DefenseRequest r) {

@@ -1,5 +1,6 @@
 package com.claudecoders.grades.shared.config;
 
+import com.claudecoders.grades.auth.RegisteredUserFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -8,19 +9,22 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, Environment environment)
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http, Environment environment, RegisteredUserFilter registeredUserFilter)
             throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .addFilterAfter(registeredUserFilter, BearerTokenAuthenticationFilter.class);
 
         if (environment.acceptsProfiles(Profiles.of("dev", "test"))) {
             http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());

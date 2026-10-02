@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/data-imports")
-@Tag(name = "DataImports", description = "CRUD de importaciones")
+@Tag(name = "Data imports", description = "Data import CRUD")
 public class DataImportController {
     private final DataImportService service;
 

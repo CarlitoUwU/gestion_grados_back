@@ -53,11 +53,17 @@ public class JuryMemberService {
     }
 
     private void check(JuryMemberRequest r, Long id) {
+        JuryMember current = id == null ? null : get(id);
         if (repository.existsByExpedientIdAndTeacherId(r.expedientId(), r.teacherId())
-                && (id == null
-                        || !(get(id).getExpedient().getId().equals(r.expedientId())
-                                && get(id).getTeacher().getId().equals(r.teacherId()))))
+                && (current == null
+                        || !(current.getExpedient().getId().equals(r.expedientId())
+                                && current.getTeacher().getId().equals(r.teacherId()))))
             throw new ConflictException("El docente ya pertenece al jurado del expediente");
+        if (repository.existsByExpedientIdAndJuryRole(r.expedientId(), r.juryRole())
+                && (current == null
+                        || !(current.getExpedient().getId().equals(r.expedientId())
+                                && current.getJuryRole().equals(r.juryRole()))))
+            throw new ConflictException("El cargo de jurado ya está asignado en el expediente");
     }
 
     private JuryMember toEntity(JuryMember v, JuryMemberRequest r) {

@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,6 +17,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException exception) {
         return response(HttpStatus.NOT_FOUND, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    ResponseEntity<ApiError> handleNoHandler(NoHandlerFoundException exception) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "No existe endpoint "
+                        + exception.getHttpMethod()
+                        + " "
+                        + exception.getRequestURL(),
+                Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

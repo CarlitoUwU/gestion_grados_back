@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/users")
-@Tag(name = "Users", description = "CRUD de usuarios")
+@Tag(name = "Users", description = "User CRUD")
 public class UserController {
 
     private final UserService service;

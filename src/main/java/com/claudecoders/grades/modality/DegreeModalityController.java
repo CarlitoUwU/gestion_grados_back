@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/degree-modalities")
-@Tag(name = "Degree modalities", description = "CRUD de modalidades de grado")
+@Tag(name = "Degree modalities", description = "Degree modality CRUD")
 public class DegreeModalityController {
     private final DegreeModalityService service;
 

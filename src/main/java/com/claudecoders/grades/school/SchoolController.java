@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/schools")
-@Tag(name = "Schools", description = "CRUD de escuelas")
+@Tag(name = "Schools", description = "School CRUD")
 public class SchoolController {
 
     private final SchoolService service;

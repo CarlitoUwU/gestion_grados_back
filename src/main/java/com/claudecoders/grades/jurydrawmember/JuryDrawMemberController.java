@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/jury-draw-members")
-@Tag(name = "JuryDrawMembers", description = "CRUD de miembros de sorteos")
+@Tag(name = "Jury draw members", description = "Jury draw member CRUD")
 public class JuryDrawMemberController {
     private final JuryDrawMemberService service;
 

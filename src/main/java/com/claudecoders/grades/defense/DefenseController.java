@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/defenses")
-@Tag(name = "Defenses", description = "CRUD de defensas")
+@Tag(name = "Defenses", description = "Defense CRUD")
 public class DefenseController {
     private final DefenseService service;
 

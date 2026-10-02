@@ -4,4 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DefenseRepository extends JpaRepository<Defense, Long> {
     boolean existsByExpedientId(Long expedientId);
+
+    java.util.Optional<Defense> findByExpedientId(Long expedientId);
 }
