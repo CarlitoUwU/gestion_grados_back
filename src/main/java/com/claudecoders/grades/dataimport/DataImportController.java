@@ -9,8 +9,10 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -21,6 +23,31 @@ public class DataImportController {
 
     public DataImportController(DataImportService service) {
         this.service = service;
+    }
+
+    @PostMapping(path = "/preview", consumes = "multipart/form-data")
+    @Operation(summary = "Previsualizar importación histórica XLSX")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Previsualización generada"),
+        @ApiResponse(responseCode = "400", description = "Archivo o estructura inválidos")
+    })
+    public ResponseEntity<com.claudecoders.grades.dataimport.dto.ImportPreviewResponse> preview(
+            @RequestPart("file") MultipartFile file, Authentication authentication) {
+        return ResponseEntity.ok(service.preview(file, authentication));
+    }
+
+    @PostMapping("/{id}/confirm")
+    @Operation(summary = "Confirmar importación histórica")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Importación confirmada"),
+        @ApiResponse(responseCode = "404", description = "Previsualización no encontrada"),
+        @ApiResponse(
+                responseCode = "409",
+                description = "Previsualización ya confirmada o con conflicto")
+    })
+    public ResponseEntity<DataImportResponse> confirm(
+            @PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(service.confirm(id, authentication));
     }
 
     @GetMapping

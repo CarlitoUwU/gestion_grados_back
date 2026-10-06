@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface DegreeModalityRepository extends JpaRepository<DegreeModality, Long> {
 
     boolean existsByNameIgnoreCase(String name);
+
+    java.util.Optional<DegreeModality> findByNameIgnoreCase(String name);
 }

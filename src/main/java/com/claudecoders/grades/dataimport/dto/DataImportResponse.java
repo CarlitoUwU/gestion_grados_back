@@ -11,6 +11,7 @@ public record DataImportResponse(
         int importedRecords,
         int rejectedRecords,
         int observedRecords,
+        String status,
         LocalDateTime importedAt) {
     public static DataImportResponse from(DataImport value) {
         return new DataImportResponse(
@@ -21,6 +22,7 @@ public record DataImportResponse(
                 value.getImportedRecords(),
                 value.getRejectedRecords(),
                 value.getObservedRecords(),
+                value.getStatus(),
                 value.getImportedAt());
     }
 }
