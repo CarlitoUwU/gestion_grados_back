@@ -83,3 +83,19 @@ Endpoints agregados para sincronizar con el frontend:
 - `GET /api/v1/accesses`
 - `POST /api/v1/accesses`
 - `PATCH /api/v1/accesses/{id}/active`
+
+## Importación histórica XLSX
+
+La carga histórica tiene dos pasos y requiere un usuario autorizado. Envíe el libro
+`.xlsx` como multipart en `POST /api/v1/data-imports/preview`, con el campo `file`.
+Se procesa la primera hoja; los encabezados pueden estar en español o en los nombres
+de campo camelCase. Las columnas requeridas son `numero_expediente`, `fecha_inicio`,
+`nombres`, `apellidos` y `titulo_trabajo`. También se aceptan `documento`, `escuela`,
+`programa_academico`, `modalidad` y `estado`. Las escuelas, modalidades y estados
+opcionales deben existir previamente en sus catálogos.
+
+La respuesta clasifica cada fila como válida, observada (duplicado o catálogo sin
+coincidencia) o rechazada (dato requerido inválido). Solo las filas válidas quedan
+preparadas para carga. Confirme explícitamente con `POST /api/v1/data-imports/{id}/confirm`;
+la inserción de graduando, expediente y trabajo se realiza en una transacción. El lote
+pendiente conserva el usuario, nombre de archivo y conteos para auditoría.

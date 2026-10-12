@@ -40,6 +40,12 @@ public class DataImport {
     @Column(name = "observed_records", nullable = false)
     private int observedRecords;
 
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "COMPLETED";
+
+    @Column(name = "staged_records", columnDefinition = "text")
+    private String stagedRecords;
+
     @CreationTimestamp
     @Column(name = "imported_at", nullable = false, updatable = false)
     private LocalDateTime importedAt;
@@ -98,6 +104,22 @@ public class DataImport {
 
     public void setObservedRecords(int observedRecords) {
         this.observedRecords = observedRecords;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getStagedRecords() {
+        return stagedRecords;
+    }
+
+    public void setStagedRecords(String stagedRecords) {
+        this.stagedRecords = stagedRecords;
     }
 
     public LocalDateTime getImportedAt() {

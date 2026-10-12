@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SchoolRepository extends JpaRepository<School, Long> {
 
     boolean existsByNameIgnoreCase(String name);
+
+    java.util.Optional<School> findByNameIgnoreCase(String name);
 }
