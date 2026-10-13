@@ -51,7 +51,7 @@ public class ExpedientQueryService {
 
     public List<ExpedientApiModels.Summary> search(
             String search, Long schoolId, Long statusId, Long modalityId, Integer year) {
-        String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+        String normalizedSearch = search == null || search.isBlank() ? "" : search.trim();
         return expedients.search(normalizedSearch, schoolId, statusId, modalityId, year).stream()
                 .map(this::summary)
                 .toList();
@@ -65,7 +65,7 @@ public class ExpedientQueryService {
             Integer year,
             int page,
             int size) {
-        String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+        String normalizedSearch = search == null || search.isBlank() ? "" : search.trim();
         var result =
                 expedients.search(
                         normalizedSearch,

@@ -36,6 +36,9 @@ def verify(base_url):
         return result["id"]
 
     try:
+        unfiltered = call("GET", "/expedients?page=0&size=1")
+        assert len(unfiltered["content"]) <= 1
+        call("GET", "/expedients?search=%20&page=0&size=1")
         school = fixture("/schools", {"name": marker + " School"})
         modality = fixture("/degree-modalities", {"name": marker + " Thesis", "active": True})
         status_name = marker + " Observado"

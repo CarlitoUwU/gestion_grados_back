@@ -125,6 +125,7 @@ class ExpedientWorkflowTest {
         var second = queries.search("Sofia Valdivia", null, null, null, 2026, 1, 1);
         assertThat(first.totalElements()).isEqualTo(2);
         assertThat(first.totalPages()).isEqualTo(2);
+        assertThat(queries.search(null, null, null, null, null, 0, 1).totalElements()).isEqualTo(2);
         assertThat(first.content().getFirst().number())
                 .isNotEqualTo(second.content().getFirst().number());
         assertThat(queries.detail("hist-2026-001").summary().number()).isEqualTo("HIST-2026-001");
