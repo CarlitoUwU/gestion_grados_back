@@ -10,11 +10,15 @@ import com.claudecoders.grades.jurydraw.JuryDrawRepository;
 import com.claudecoders.grades.jurydrawmember.JuryDrawMemberRepository;
 import com.claudecoders.grades.jurymember.JuryMember;
 import com.claudecoders.grades.jurymember.JuryMemberRepository;
+import com.claudecoders.grades.researchwork.ResearchWork;
 import com.claudecoders.grades.researchwork.ResearchWorkRepository;
 import com.claudecoders.grades.resolution.Resolution;
 import com.claudecoders.grades.resolution.ResolutionRepository;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,9 +56,30 @@ public class ExpedientQueryService {
     public List<ExpedientApiModels.Summary> search(
             String search, Long schoolId, Long statusId, Long modalityId, Integer year) {
         String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
-        return expedients.search(normalizedSearch, schoolId, statusId, modalityId, year).stream()
-                .map(this::summary)
+        var found = expedients.search(normalizedSearch, schoolId, statusId, modalityId, year);
+        if (found.isEmpty()) return List.of();
+        var ids = found.stream().map(Expedient::getId).toList();
+        Map<Long, ResearchWork> research =
+                researchWorks.findByExpedientIdIn(ids).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        r -> r.getExpedient().getId(), Function.identity()));
+        Map<Long, Defense> defense =
+                defenses.findByExpedientIdIn(ids).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        d -> d.getExpedient().getId(), Function.identity()));
+        return found.stream()
+                .map(e -> summary(e, research.get(e.getId()), defense.get(e.getId())))
                 .toList();
+    }
+
+    public ExpedientApiModels.Summary summary(Long id) {
+        var expedient =
+                expedients
+                        .findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Expedient", id));
+        return summary(expedient);
     }
 
     public ExpedientApiModels.Detail detail(Long id) {
@@ -83,12 +108,20 @@ public class ExpedientQueryService {
     }
 
     private ExpedientApiModels.Summary summary(Expedient expedient) {
+        return summary(
+                expedient,
+                researchWorks.findByExpedientId(expedient.getId()).orElse(null),
+                defenses.findByExpedientId(expedient.getId()).orElse(null));
+    }
+
+    private ExpedientApiModels.Summary summary(
+            Expedient expedient, ResearchWork research, Defense defense) {
         var graduate = expedient.getGraduate();
         var school = graduate.getSchool();
         var modality = expedient.getModality();
         var status = expedient.getStatus();
-        var research = researchWorks.findByExpedientId(expedient.getId()).orElse(null);
-        var defense = defenses.findByExpedientId(expedient.getId()).orElse(null);
+        var createdBy = expedient.getCreatedBy();
+        var updatedBy = expedient.getUpdatedBy();
         return new ExpedientApiModels.Summary(
                 expedient.getId(),
                 expedient.getNumber(),
@@ -106,7 +139,13 @@ public class ExpedientQueryService {
                 research == null ? null : research.getTitle(),
                 defense == null ? null : defense.getDefenseDate(),
                 defense == null ? null : defense.getResult(),
-                expedient.getUpdatedAt());
+                expedient.getUpdatedAt(),
+                research == null ? null : research.getId(),
+                research == null ? null : research.getWorkType(),
+                graduate.getFirstNames(),
+                graduate.getLastNames(),
+                createdBy == null ? null : createdBy.getFullName(),
+                updatedBy == null ? null : updatedBy.getFullName());
     }
 
     private ExpedientApiModels.ResolutionItem resolution(Resolution value) {

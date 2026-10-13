@@ -34,14 +34,14 @@ public class ExpedientQueryController {
             @RequestParam(required = false) Long schoolId,
             @RequestParam(required = false) Long statusId,
             @RequestParam(required = false) Long modalityId,
-            @Parameter(description = "Año de inicio del expediente")
-                    @RequestParam(required = false)
+            @Parameter(description = "Año de inicio del expediente") @RequestParam(required = false)
                     Integer year) {
         return service.search(search, schoolId, statusId, modalityId, year);
     }
 
     @GetMapping("/{id}/detail")
-    @Operation(summary = "Obtener expediente con resoluciones, asesor, jurado, sorteos y sustentación")
+    @Operation(
+            summary = "Obtener expediente con resoluciones, asesor, jurado, sorteos y sustentación")
     public ExpedientApiModels.Detail detail(@PathVariable Long id) {
         return service.detail(id);
     }
