@@ -50,8 +50,7 @@ public class DashboardService {
                 records.stream()
                         .filter(
                                 record ->
-                                        !value(record.statusName())
-                                                .equalsIgnoreCase("Completado"))
+                                        !value(record.statusName()).equalsIgnoreCase("Completado"))
                         .count();
         var upcoming =
                 records.stream()

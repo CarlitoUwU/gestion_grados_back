@@ -6,10 +6,11 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,10 +24,7 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleNoHandler(NoHandlerFoundException exception) {
         return response(
                 HttpStatus.NOT_FOUND,
-                "No existe endpoint "
-                        + exception.getHttpMethod()
-                        + " "
-                        + exception.getRequestURL(),
+                "No existe endpoint " + exception.getHttpMethod() + " " + exception.getRequestURL(),
                 Map.of());
     }
 
@@ -51,6 +49,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     ResponseEntity<ApiError> handleConflict(ConflictException exception) {
         return response(HttpStatus.CONFLICT, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(BusinessValidationException.class)
+    ResponseEntity<ApiError> handleBusinessValidation(BusinessValidationException exception) {
+        return response(HttpStatus.BAD_REQUEST, exception.getMessage(), exception.getErrors());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> handleMalformedJson(HttpMessageNotReadableException exception) {
+        return response(HttpStatus.BAD_REQUEST, "JSON mal formado o valor no admitido", Map.of());
     }
 
     private ResponseEntity<ApiError> response(

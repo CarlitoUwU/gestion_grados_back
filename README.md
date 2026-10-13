@@ -84,6 +84,64 @@ Endpoints agregados para sincronizar con el frontend:
 - `POST /api/v1/accesses`
 - `PATCH /api/v1/accesses/{id}/active`
 
+### Expedientes completos y reemplazo académico
+
+La escritura de expedientes exige JWT de un usuario registrado y activo, incluso en
+desarrollo y pruebas. `createdById` y `updatedById` en el CRUD son campos obsoletos:
+se ignoran y se obtienen del JWT. Las fechas se reciben como `yyyy-MM-dd` y «hoy»
+se calcula en `America/Lima`.
+
+- `POST /api/v1/expedients/complete`: crea graduando, expediente e investigación.
+- `PUT /api/v1/expedients/{id}/complete`: actualiza los tres; si cambiar los datos
+  de un graduando afectaría otros expedientes, devuelve 409. `graduate.fullName`
+  se guarda íntegro como `firstNames` y `lastNames` vacío cuando no se envían
+  nombres separados.
+- `PATCH /api/v1/expedients/{id}/status`: recibe `{ "statusId": 1 }` y acepta
+  cualquier estado existente y activo.
+- `PUT /api/v1/expedients/{id}/academic`: **reemplazo total**, no parche. Se
+  exigen `resolutions` y `draws` (listas que pueden estar vacías); `jury: null`,
+  `advisor: null` y `defense: null` los eliminan. Si `jury` es una lista, debe
+  tener al menos un miembro. Cada resolución puede declarar `clientId` (referencia
+  temporal no persistida); asesor,
+  jurado y sorteos pueden referirla mediante `resolutionClientId` (opcional).
+  Cada sorteo contiene `teacherIds`. Los registros con `id` conservan su ID;
+  los omitidos se eliminan. `fileUrl` de resoluciones conservadas no cambia.
+  Una referencia interna inválida devuelve 400 y un ID de entidad inexistente
+  devuelve 404.
+
+Ejemplo de `/complete`:
+
+```json
+{
+  "number": "EXP-2025-001", "startDate": "2025-01-01", "modalityId": 1, "statusId": 1,
+  "graduate": {"documentNumber": "12345678", "fullName": "Nombre Completo", "schoolId": 1},
+  "research": {"title": "Título de investigación", "workType": "TESIS"}
+}
+```
+
+Ejemplo de `/academic`:
+
+```json
+{
+  "resolutions": [{"clientId": "r1", "number": "R-001", "date": "2025-01-02", "type": "NOMBRAMIENTO"}],
+  "advisor": {"teacherId": 1, "resolutionClientId": "r1"},
+  "jury": [{"teacherId": 2, "role": "PRESIDENTE", "resolutionClientId": "r1"}],
+  "draws": [{"date": "2025-01-03", "resolutionClientId": "r1", "teacherIds": [2]}],
+  "defense": null
+}
+```
+
+**Límites de este contrato provisional:** el pedido no especifica el patrón del
+número ni el catálogo de tipos de resolución ni reglas adicionales de resultados;
+no se valida todavía la compatibilidad entre el tipo de resolución y asesor,
+jurado o sorteo. Se aplican las longitudes de la BD y las reglas de fechas
+existentes. Sin un
+índice único insensible a mayúsculas, la comprobación de duplicados por servicio
+no garantiza unicidad insensible a mayúsculas bajo escrituras concurrentes.
+El intercambio de docentes entre dos IDs de jurado conservados puede chocar con
+la restricción UNIQUE inmediata; para soportarlo se requiere una reasignación
+escalonada.
+
 ## Importación histórica XLSX
 
 La carga histórica tiene dos pasos y requiere un usuario autorizado. Envíe el libro

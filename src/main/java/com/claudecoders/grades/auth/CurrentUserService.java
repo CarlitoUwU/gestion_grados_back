@@ -20,6 +20,7 @@ public class CurrentUserService {
 
     public User from(Authentication authentication) {
         return find(authentication)
+                .filter(User::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("AuthenticatedUser", 0L));
     }
 

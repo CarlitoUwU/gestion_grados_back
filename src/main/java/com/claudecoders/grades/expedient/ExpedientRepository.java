@@ -1,6 +1,7 @@
 package com.claudecoders.grades.expedient;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,6 +9,17 @@ import org.springframework.data.repository.query.Param;
 public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
     boolean existsByNumberIgnoreCase(String number);
 
+    boolean existsByGraduateIdAndIdNot(Long graduateId, Long id);
+
+    @EntityGraph(
+            attributePaths = {
+                "graduate",
+                "graduate.school",
+                "modality",
+                "status",
+                "createdBy",
+                "updatedBy"
+            })
     @Query(
             """
             select distinct e from Expedient e
@@ -29,6 +41,9 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
                     or lower(e.number) like lower(concat('%', :search, '%'))
                     or lower(g.firstNames) like lower(concat('%', :search, '%'))
                     or lower(g.lastNames) like lower(concat('%', :search, '%'))
+                    or lower(coalesce(g.documentNumber, '')) like lower(concat('%', :search, '%'))
+                    or exists (select rw.id from ResearchWork rw where rw.expedient = e
+                               and lower(rw.title) like lower(concat('%', :search, '%')))
                     or lower(coalesce(s.name, '')) like lower(concat('%', :search, '%'))
                     or lower(coalesce(g.academicProgram, '')) like lower(concat('%', :search, '%'))
                     or lower(coalesce(r.number, '')) like lower(concat('%', :search, '%'))
