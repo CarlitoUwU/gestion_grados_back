@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -72,6 +73,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     ResponseEntity<ApiError> handleConflict(ConflictException exception) {
         return response(HttpStatus.CONFLICT, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(BusinessValidationException.class)
+    ResponseEntity<ApiError> handleBusinessValidation(BusinessValidationException exception) {
+        return response(HttpStatus.BAD_REQUEST, exception.getMessage(), exception.getErrors());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> handleMalformedJson(HttpMessageNotReadableException exception) {
+        return response(HttpStatus.BAD_REQUEST, "JSON mal formado o valor no admitido", Map.of());
     }
 
     private ResponseEntity<ApiError> response(

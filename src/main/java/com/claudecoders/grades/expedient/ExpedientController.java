@@ -1,7 +1,11 @@
 package com.claudecoders.grades.expedient;
 
+import com.claudecoders.grades.expedient.dto.AcademicRequest;
+import com.claudecoders.grades.expedient.dto.CompleteExpedientRequest;
 import com.claudecoders.grades.expedient.dto.ExpedientApiModels;
 import com.claudecoders.grades.expedient.dto.ExpedientProcessRequests;
+import com.claudecoders.grades.expedient.dto.ExpedientRequest;
+import com.claudecoders.grades.expedient.dto.ExpedientResponse;
 import com.claudecoders.grades.expedient.dto.ExpedientWriteRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -24,14 +28,17 @@ public class ExpedientController {
     private final ExpedientService service;
     private final ExpedientQueryService queries;
     private final ExpedientProcessService processes;
+    private final ExpedientAcademicService academic;
 
     public ExpedientController(
             ExpedientService service,
             ExpedientQueryService queries,
-            ExpedientProcessService processes) {
+            ExpedientProcessService processes,
+            ExpedientAcademicService academic) {
         this.service = service;
         this.queries = queries;
         this.processes = processes;
+        this.academic = academic;
     }
 
     @GetMapping
@@ -75,6 +82,50 @@ public class ExpedientController {
         return service.update(number, request, auth);
     }
 
+    @PostMapping("/complete")
+    @Operation(summary = "Registrar expediente, graduando e investigación en una transacción")
+    public ResponseEntity<ExpedientApiModels.Detail> createComplete(
+            @Valid @RequestBody CompleteExpedientRequest request, Authentication authentication) {
+        var detail = service.createComplete(request, authentication);
+        return ResponseEntity.created(
+                        java.net.URI.create(
+                                "/api/v1/expedients/" + detail.summary().id() + "/detail"))
+                .body(detail);
+    }
+
+    @PutMapping("/{id}/complete")
+    @Operation(summary = "Actualizar expediente, graduando e investigación")
+    public ExpedientApiModels.Detail updateComplete(
+            @PathVariable Long id,
+            @Valid @RequestBody CompleteExpedientRequest request,
+            Authentication authentication) {
+        return service.updateComplete(id, request, authentication);
+    }
+
+    @PutMapping("/{id}/academic")
+    @Operation(
+            summary = "Reemplazar toda la información académica",
+            description =
+                    "Reemplazo total y atómico: omitir elementos de las listas los elimina; "
+                            + "advisor y defense nulos los eliminan. clientId identifica una resolución "
+                            + "en esta petición; resolutionClientId es opcional. fileUrl no se modifica.")
+    public ExpedientApiModels.Detail replaceAcademic(
+            @PathVariable Long id,
+            @Valid @RequestBody AcademicRequest request,
+            Authentication authentication) {
+        return academic.replace(id, request, authentication);
+    }
+
+    @PostMapping("/legacy")
+    @Operation(summary = "Crear expediente con referencias por ID (contrato heredado)")
+    public ResponseEntity<ExpedientResponse> createLegacy(
+            @Valid @RequestBody ExpedientRequest request, Authentication auth) {
+        var result = service.create(request, auth);
+        return ResponseEntity.created(
+                        java.net.URI.create("/api/v1/expedients/" + result.id() + "/detail"))
+                .body(result);
+    }
+
     @DeleteMapping("/{number}")
     @Operation(summary = "Eliminar expediente y sus registros académicos asociados")
     public ResponseEntity<Void> delete(@PathVariable String number) {
@@ -84,10 +135,19 @@ public class ExpedientController {
 
     @PatchMapping("/{number}/status")
     @Operation(summary = "Cambiar estado y observaciones administrativas")
-    public ExpedientApiModels.Detail status(
+    public Object status(
             @PathVariable String number,
             @Valid @RequestBody ExpedientProcessRequests.Status request,
             Authentication auth) {
+        if (request.statusId() != null) {
+            try {
+                return service.updateStatus(Long.valueOf(number), request.statusId(), auth);
+            } catch (NumberFormatException exception) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "statusId requiere el ID num?rico del expediente");
+            }
+        }
         return processes.status(number, request, auth);
     }
 

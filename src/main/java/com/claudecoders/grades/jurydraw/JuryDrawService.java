@@ -5,6 +5,7 @@ import com.claudecoders.grades.jurydraw.dto.JuryDrawResponse;
 import com.claudecoders.grades.shared.exception.ConflictException;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.shared.service.EntityReferenceResolver;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class JuryDrawService {
     private final JuryDrawRepository repository;
     private final EntityReferenceResolver refs;
+    private final Clock clock;
 
-    public JuryDrawService(JuryDrawRepository repository, EntityReferenceResolver refs) {
+    public JuryDrawService(
+            JuryDrawRepository repository, EntityReferenceResolver refs, Clock clock) {
         this.repository = repository;
         this.refs = refs;
+        this.clock = clock;
     }
 
     public List<JuryDrawResponse> findAll() {
@@ -57,7 +61,7 @@ public class JuryDrawService {
         if (r.drawDate() != null && r.drawDate().isBefore(expedient.getStartDate()))
             throw new ConflictException(
                     "La fecha del sorteo no puede ser anterior al inicio del expediente");
-        if (r.drawDate() != null && r.drawDate().isAfter(LocalDate.now()))
+        if (r.drawDate() != null && r.drawDate().isAfter(LocalDate.now(clock)))
             throw new ConflictException("La fecha del sorteo no puede ser posterior a hoy");
     }
 

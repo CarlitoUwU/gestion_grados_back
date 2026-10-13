@@ -12,7 +12,18 @@ import java.util.List;
 public final class ExpedientProcessRequests {
     private ExpedientProcessRequests() {}
 
-    public record Status(@NotBlank @Size(max = 100) String status, String observations) {}
+    public record Status(
+            @Size(max = 100) String status, String observations, @Positive Long statusId) {
+        public Status(String status, String observations) {
+            this(status, observations, null);
+        }
+
+        @jakarta.validation.constraints.AssertTrue(
+                message = "Indique status o statusId, exclusivamente")
+        public boolean isValidSelection() {
+            return (status != null && !status.isBlank()) != (statusId != null);
+        }
+    }
 
     public record Advisor(
             @NotNull @Positive Long teacherId,

@@ -151,8 +151,7 @@ python scripts/verify_expedient_api.py
 
 La verificación crea datos temporales y los elimina al terminar. Comprueba CRUD,
 paginación, reutilización de graduando, validaciones, rollback y proceso académico.
-Para otra URL, pasar la base `/api/v1` como argumento. En un entorno autenticado,
-configurar `API_TOKEN` con el JWT del usuario autorizado.
+Para otra URL, pasar la base `/api/v1` como argumento. Configurar `API_TOKEN` con el JWT de un usuario registrado y activo, tambi?n en desarrollo.
 
 Después de cambiar dependencias Gradle, reconstruir y recrear el proceso de la API
 para actualizar el classpath de Spring Boot:
@@ -161,6 +160,63 @@ para actualizar el classpath de Spring Boot:
 docker compose -f compose.dev.yml build --no-cache api
 docker compose -f compose.dev.yml up -d --force-recreate api
 ```
+### Expedientes completos y reemplazo académico
+
+La escritura de expedientes exige JWT de un usuario registrado y activo, incluso en
+desarrollo y pruebas. `createdById` y `updatedById` en el CRUD son campos obsoletos:
+se ignoran y se obtienen del JWT. Las fechas se reciben como `yyyy-MM-dd` y «hoy»
+se calcula en `America/Lima`.
+
+- `POST /api/v1/expedients/complete`: crea graduando, expediente e investigación.
+- `PUT /api/v1/expedients/{id}/complete`: actualiza los tres; si cambiar los datos
+  de un graduando afectaría otros expedientes, devuelve 409. `graduate.fullName`
+  se guarda íntegro como `firstNames` y `lastNames` vacío cuando no se envían
+  nombres separados.
+- `PATCH /api/v1/expedients/{id}/status`: recibe `{ "statusId": 1 }` y acepta
+  cualquier estado existente y activo.
+- `PUT /api/v1/expedients/{id}/academic`: **reemplazo total**, no parche. Se
+  exigen `resolutions` y `draws` (listas que pueden estar vacías); `jury: null`,
+  `advisor: null` y `defense: null` los eliminan. Si `jury` es una lista, debe
+  tener al menos un miembro. Cada resolución puede declarar `clientId` (referencia
+  temporal no persistida); asesor,
+  jurado y sorteos pueden referirla mediante `resolutionClientId` (opcional).
+  Cada sorteo contiene `teacherIds`. Los registros con `id` conservan su ID;
+  los omitidos se eliminan. `fileUrl` de resoluciones conservadas no cambia.
+  Una referencia interna inválida devuelve 400 y un ID de entidad inexistente
+  devuelve 404.
+
+Ejemplo de `/complete`:
+
+```json
+{
+  "number": "EXP-2025-001", "startDate": "2025-01-01", "modalityId": 1, "statusId": 1,
+  "graduate": {"documentNumber": "12345678", "fullName": "Nombre Completo", "schoolId": 1},
+  "research": {"title": "Título de investigación", "workType": "TESIS"}
+}
+```
+
+Ejemplo de `/academic`:
+
+```json
+{
+  "resolutions": [{"clientId": "r1", "number": "R-001", "date": "2025-01-02", "type": "NOMBRAMIENTO"}],
+  "advisor": {"teacherId": 1, "resolutionClientId": "r1"},
+  "jury": [{"teacherId": 2, "role": "PRESIDENTE", "resolutionClientId": "r1"}],
+  "draws": [{"date": "2025-01-03", "resolutionClientId": "r1", "teacherIds": [2]}],
+  "defense": null
+}
+```
+
+**Límites de este contrato provisional:** el pedido no especifica el patrón del
+número ni el catálogo de tipos de resolución ni reglas adicionales de resultados;
+no se valida todavía la compatibilidad entre el tipo de resolución y asesor,
+jurado o sorteo. Se aplican las longitudes de la BD y las reglas de fechas
+existentes. Sin un
+índice único insensible a mayúsculas, la comprobación de duplicados por servicio
+no garantiza unicidad insensible a mayúsculas bajo escrituras concurrentes.
+El intercambio de docentes entre dos IDs de jurado conservados puede chocar con
+la restricción UNIQUE inmediata; para soportarlo se requiere una reasignación
+escalonada.
 
 ## Importación histórica XLSX
 
@@ -177,3 +233,17 @@ coincidencia) o rechazada (dato requerido inválido). Solo las filas válidas qu
 preparadas para carga. Confirme explícitamente con `POST /api/v1/data-imports/{id}/confirm`;
 la inserción de graduando, expediente y trabajo se realiza en una transacción. El lote
 pendiente conserva el usuario, nombre de archivo y conteos para auditoría.
+
+### Compatibilidad al integrar main
+
+Se conservan `/complete`, `/{id}/complete` y `/{id}/academic`. El PATCH de estado
+acepta el contrato por c?digo con `status` o el contrato por ID num?rico con
+`statusId`; se debe enviar solo una de esas opciones. La creaci?n heredada con
+`graduateId` est? disponible en `POST /api/v1/expedients/legacy`.
+La API principal mantiene el payload anidado y las rutas por c?digo.
+
+Flyway conserva `V3__expedient_query_indexes.sql` de main. Los campos de la API
+unificada pasan a `V4__expedient_unified_fields.sql`. Las bases locales que ya
+aplicaron la antigua V3 de esta rama requieren reconciliar su historial antes de
+arrancar esta versi?n; no se deben borrar sus datos ni ejecutar repair sin revisar
+el historial y el esquema.

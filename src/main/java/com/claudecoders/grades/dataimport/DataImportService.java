@@ -19,6 +19,7 @@ import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.shared.service.EntityReferenceResolver;
 import com.claudecoders.grades.user.User;
 import java.io.IOException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -41,7 +42,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @Transactional(readOnly = true)
@@ -57,7 +58,8 @@ public class DataImportService {
     private final SchoolRepository schools;
     private final DegreeModalityRepository modalities;
     private final ExpedientStatusRepository statuses;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
+    private final Clock clock;
 
     public DataImportService(
             DataImportRepository repository,
@@ -69,7 +71,8 @@ public class DataImportService {
             SchoolRepository schools,
             DegreeModalityRepository modalities,
             ExpedientStatusRepository statuses,
-            ObjectMapper objectMapper) {
+            JsonMapper objectMapper,
+            Clock clock) {
         this.repository = repository;
         this.refs = refs;
         this.currentUser = currentUser;
@@ -80,6 +83,7 @@ public class DataImportService {
         this.modalities = modalities;
         this.statuses = statuses;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     public List<DataImportResponse> findAll() {
@@ -149,6 +153,8 @@ public class DataImportService {
                 String title = cell(row, columns, "researchTitle", formatter, evaluator);
                 if (number.isBlank()) errors.add("Número de expediente obligatorio");
                 if (startDate == null) errors.add("Fecha de inicio inválida; use AAAA-MM-DD");
+                else if (startDate.isAfter(LocalDate.now(clock)))
+                    errors.add("La fecha de inicio no puede ser posterior a hoy en Lima");
                 if (firstNames.isBlank()) errors.add("Nombres obligatorios");
                 if (lastNames.isBlank()) errors.add("Apellidos obligatorios");
                 if (title.isBlank()) errors.add("Título del trabajo obligatorio");

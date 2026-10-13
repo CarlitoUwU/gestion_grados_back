@@ -5,6 +5,7 @@ import com.claudecoders.grades.defense.dto.DefenseResponse;
 import com.claudecoders.grades.shared.exception.ConflictException;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.shared.service.EntityReferenceResolver;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class DefenseService {
     private final DefenseRepository repository;
     private final EntityReferenceResolver refs;
+    private final Clock clock;
 
-    public DefenseService(DefenseRepository repository, EntityReferenceResolver refs) {
+    public DefenseService(DefenseRepository repository, EntityReferenceResolver refs, Clock clock) {
         this.repository = repository;
         this.refs = refs;
+        this.clock = clock;
     }
 
     public List<DefenseResponse> findAll() {
@@ -66,7 +69,7 @@ public class DefenseService {
             throw new ConflictException(
                     "La fecha de sustentación no puede ser anterior al inicio del expediente");
         if (r.defenseDate() != null
-                && r.defenseDate().isAfter(LocalDate.now())
+                && r.defenseDate().isAfter(LocalDate.now(clock))
                 && r.result() != null
                 && !r.result().isBlank()
                 && !"Pendiente".equalsIgnoreCase(r.result().trim()))

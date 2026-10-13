@@ -27,7 +27,13 @@ public final class ExpedientApiModels {
             LocalDateTime updatedAt,
             String degree,
             String observations,
-            String studentCode) {}
+            String studentCode,
+            Long researchWorkId,
+            String researchWorkType,
+            String graduateFirstNames,
+            String graduateLastNames,
+            String createdByName,
+            String updatedByName) {}
 
     public record Detail(
             Summary summary,

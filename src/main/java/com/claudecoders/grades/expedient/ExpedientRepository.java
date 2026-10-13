@@ -1,6 +1,7 @@
 package com.claudecoders.grades.expedient;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,8 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
             jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from Expedient e where lower(e.number) = lower(:number)")
     java.util.Optional<Expedient> findForUpdateByNumber(@Param("number") String number);
+
+    boolean existsByGraduateIdAndIdNot(Long graduateId, Long id);
 
     String SEARCH_FILTER =
             """
@@ -39,6 +42,8 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
                     or lower(coalesce(g.fullName, '')) like lower(concat('%', :search, '%'))
                     or lower(coalesce(g.documentNumber, '')) like lower(concat('%', :search, '%'))
                     or lower(coalesce(g.studentCode, '')) like lower(concat('%', :search, '%'))
+                    or exists (select rw.id from ResearchWork rw where rw.expedient = e
+                               and lower(rw.title) like lower(concat('%', :search, '%')))
                     or lower(coalesce(s.name, '')) like lower(concat('%', :search, '%'))
                     or lower(coalesce(g.academicProgram, '')) like lower(concat('%', :search, '%'))
                     or lower(coalesce(r.number, '')) like lower(concat('%', :search, '%'))
@@ -47,6 +52,15 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
               )
             """;
 
+    @EntityGraph(
+            attributePaths = {
+                "graduate",
+                "graduate.school",
+                "modality",
+                "status",
+                "createdBy",
+                "updatedBy"
+            })
     @Query("select distinct e " + SEARCH_FILTER + " order by e.startDate desc, e.id desc")
     List<Expedient> search(
             @Param("search") String search,
@@ -55,6 +69,15 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
             @Param("modalityId") Long modalityId,
             @Param("year") Integer year);
 
+    @EntityGraph(
+            attributePaths = {
+                "graduate",
+                "graduate.school",
+                "modality",
+                "status",
+                "createdBy",
+                "updatedBy"
+            })
     @Query(
             value = "select distinct e " + SEARCH_FILTER + " order by e.startDate desc, e.id desc",
             countQuery = "select count(distinct e) " + SEARCH_FILTER)
