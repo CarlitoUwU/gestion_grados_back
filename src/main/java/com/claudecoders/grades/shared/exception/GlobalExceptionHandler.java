@@ -15,6 +15,30 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    ResponseEntity<ApiError> handleStatus(
+            org.springframework.web.server.ResponseStatusException exception) {
+        return response(
+                HttpStatus.valueOf(exception.getStatusCode().value()),
+                exception.getReason(),
+                Map.of());
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    ResponseEntity<ApiError> handleConstraints(
+            jakarta.validation.ConstraintViolationException exception) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        exception
+                .getConstraintViolations()
+                .forEach(
+                        violation ->
+                                errors.put(
+                                        violation.getPropertyPath().toString(),
+                                        violation.getMessage()));
+        return response(
+                HttpStatus.BAD_REQUEST, "La solicitud contiene parámetros inválidos", errors);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException exception) {
         return response(HttpStatus.NOT_FOUND, exception.getMessage(), Map.of());

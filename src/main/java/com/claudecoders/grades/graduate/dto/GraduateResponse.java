@@ -8,7 +8,9 @@ public record GraduateResponse(
         String firstNames,
         String lastNames,
         Long schoolId,
-        String academicProgram) {
+        String academicProgram,
+        String fullName,
+        String studentCode) {
     public static GraduateResponse from(Graduate value) {
         return new GraduateResponse(
                 value.getId(),
@@ -16,6 +18,8 @@ public record GraduateResponse(
                 value.getFirstNames(),
                 value.getLastNames(),
                 value.getSchool() == null ? null : value.getSchool().getId(),
-                value.getAcademicProgram());
+                value.getAcademicProgram(),
+                value.getFullName(),
+                value.getStudentCode());
     }
 }

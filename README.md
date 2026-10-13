@@ -24,6 +24,9 @@ Detener los servicios:
 docker compose -f compose.dev.yml down
 ```
 
+La caché de dependencias Gradle se conserva en el volumen Docker `gradle-cache`.
+Esto evita leer los JAR de dependencias a través del montaje del disco de Windows.
+
 ## Health check
 
 Con los contenedores levantados, abrir:
@@ -84,6 +87,79 @@ Endpoints agregados para sincronizar con el frontend:
 - `POST /api/v1/accesses`
 - `PATCH /api/v1/accesses/{id}/active`
 
+## API unificada de expedientes
+
+`GET /api/v1/expedients` acepta `search`, `schoolId`, `statusId`, `modalityId`,
+`year`, `page` (desde 0) y `size` (1 a 200, por defecto 20). Devuelve `content`,
+`page`, `size`, `totalElements`, `totalPages`, `first` y `last`. La búsqueda también
+incluye nombre completo, documento y código del estudiante.
+
+`GET`, `PUT` y `DELETE /api/v1/expedients/{number}` usan el código del expediente,
+por ejemplo `EXP-2026-0001`. El detalle incluye `summary`, `graduate`, `research`,
+`degree`, `observations`, `resolutions`, `advisor`, `jury`, `draws` y `defense`.
+Se conservan `GET /expedients/search` y `GET /expedients/{id}/detail`.
+
+`POST /api/v1/expedients` y `PUT /api/v1/expedients/{number}` reciben:
+
+```json
+{
+  "number": "EXP-2026-0001",
+  "startDate": "2026-03-15",
+  "degree": "Título profesional",
+  "modalityId": 1,
+  "statusId": 1,
+  "observations": "Expediente ingresado en mesa de partes.",
+  "graduate": {
+    "fullName": "Sofia Valdivia Paredes",
+    "documentNumber": "72345678",
+    "studentCode": "20193456",
+    "schoolId": 1,
+    "academicProgram": "Pregrado"
+  },
+  "research": { "title": "Arquitectura de microservicios para gestión académica" }
+}
+```
+
+La operación es transaccional. Se reutiliza un graduando identificado por documento
+o código de estudiante; las coincidencias ambiguas devuelven `409`. El nombre completo
+se conserva tal como se recibe. Los datos del graduando reutilizado se actualizan con
+el payload, por lo que el cambio también se refleja en otros expedientes del graduando.
+`research` es opcional; si se omite en una actualización, el trabajo existente se conserva.
+Los IDs de escuela, modalidad y estado deben existir en sus catálogos.
+
+Las siguientes operaciones devuelven el detalle actualizado:
+
+| Método | Ruta bajo `/api/v1/expedients/{number}` | Payload |
+| --- | --- | --- |
+| PATCH | `/status` | `status` (nombre de catálogo), `observations` |
+| PUT | `/advisor` | `teacherId`, `resolutionNumber`, `assignedAt` |
+| PUT | `/jury` | `resolutionNumber`, `members: [{teacherId, role}]` |
+| POST | `/draw` | `drawDate`, `resolutionNumber`, `teacherIds` |
+| PUT | `/defense` | `defenseDate`, `result` |
+
+El jurado requiere exactamente tres docentes distintos con los cargos Presidente,
+Secretario y Vocal, sin distinguir mayúsculas. Asesor y sustentación se actualizan si
+ya existen. Las resoluciones se reutilizan por número dentro del mismo expediente.
+Eliminar un expediente también elimina sus registros académicos asociados; el graduando
+permanece disponible para otros expedientes.
+
+Con la API de desarrollo levantada, ejecutar la verificación de integración:
+
+```sh
+python scripts/verify_expedient_api.py
+```
+
+La verificación crea datos temporales y los elimina al terminar. Comprueba CRUD,
+paginación, reutilización de graduando, validaciones, rollback y proceso académico.
+Para otra URL, pasar la base `/api/v1` como argumento. Configurar `API_TOKEN` con el JWT de un usuario registrado y activo, tambi?n en desarrollo.
+
+Después de cambiar dependencias Gradle, reconstruir y recrear el proceso de la API
+para actualizar el classpath de Spring Boot:
+
+```sh
+docker compose -f compose.dev.yml build --no-cache api
+docker compose -f compose.dev.yml up -d --force-recreate api
+```
 ### Expedientes completos y reemplazo académico
 
 La escritura de expedientes exige JWT de un usuario registrado y activo, incluso en
@@ -157,3 +233,17 @@ coincidencia) o rechazada (dato requerido inválido). Solo las filas válidas qu
 preparadas para carga. Confirme explícitamente con `POST /api/v1/data-imports/{id}/confirm`;
 la inserción de graduando, expediente y trabajo se realiza en una transacción. El lote
 pendiente conserva el usuario, nombre de archivo y conteos para auditoría.
+
+### Compatibilidad al integrar main
+
+Se conservan `/complete`, `/{id}/complete` y `/{id}/academic`. El PATCH de estado
+acepta el contrato por c?digo con `status` o el contrato por ID num?rico con
+`statusId`; se debe enviar solo una de esas opciones. La creaci?n heredada con
+`graduateId` est? disponible en `POST /api/v1/expedients/legacy`.
+La API principal mantiene el payload anidado y las rutas por c?digo.
+
+Flyway conserva `V3__expedient_query_indexes.sql` de main. Los campos de la API
+unificada pasan a `V4__expedient_unified_fields.sql`. Las bases locales que ya
+aplicaron la antigua V3 de esta rama requieren reconciliar su historial antes de
+arrancar esta versi?n; no se deben borrar sus datos ni ejecutar repair sin revisar
+el historial y el esquema.
