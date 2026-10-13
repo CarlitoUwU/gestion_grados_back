@@ -6,5 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ResolutionRepository extends JpaRepository<Resolution, Long> {
     boolean existsByExpedientIdAndNumberIgnoreCase(Long expedientId, String number);
 
+    java.util.Optional<Resolution> findByExpedientIdAndNumberIgnoreCase(
+            Long expedientId, String number);
+
     List<Resolution> findByExpedientIdOrderByResolutionDateDescIdDesc(Long expedientId);
 }

@@ -24,7 +24,10 @@ public final class ExpedientApiModels {
             String researchTitle,
             LocalDate defenseDate,
             String defenseResult,
-            LocalDateTime updatedAt) {}
+            LocalDateTime updatedAt,
+            String degree,
+            String observations,
+            String studentCode) {}
 
     public record Detail(
             Summary summary,
@@ -32,7 +35,31 @@ public final class ExpedientApiModels {
             AdvisorItem advisor,
             List<JuryItem> jury,
             List<DrawItem> draws,
-            DefenseItem defense) {}
+            DefenseItem defense,
+            String degree,
+            String observations,
+            GraduateItem graduate,
+            ResearchItem research) {}
+
+    public record GraduateItem(
+            Long id,
+            String fullName,
+            String documentNumber,
+            String studentCode,
+            Long schoolId,
+            String schoolName,
+            String academicProgram) {}
+
+    public record ResearchItem(Long id, String title) {}
+
+    public record PageResult(
+            List<Summary> content,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages,
+            boolean first,
+            boolean last) {}
 
     public record ResolutionItem(
             Long id, String number, LocalDate date, String type, String fileUrl) {}

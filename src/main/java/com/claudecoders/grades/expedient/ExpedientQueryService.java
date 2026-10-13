@@ -57,6 +57,41 @@ public class ExpedientQueryService {
                 .toList();
     }
 
+    public ExpedientApiModels.PageResult search(
+            String search,
+            Long schoolId,
+            Long statusId,
+            Long modalityId,
+            Integer year,
+            int page,
+            int size) {
+        String normalizedSearch = search == null || search.isBlank() ? null : search.trim();
+        var result =
+                expedients.search(
+                        normalizedSearch,
+                        schoolId,
+                        statusId,
+                        modalityId,
+                        year,
+                        org.springframework.data.domain.PageRequest.of(page, size));
+        return new ExpedientApiModels.PageResult(
+                result.getContent().stream().map(this::summary).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isFirst(),
+                result.isLast());
+    }
+
+    public ExpedientApiModels.Detail detail(String number) {
+        var expedient =
+                expedients
+                        .findByNumberIgnoreCase(number.trim())
+                        .orElseThrow(() -> new ResourceNotFoundException("Expedient", number));
+        return detail(expedient.getId());
+    }
+
     public ExpedientApiModels.Detail detail(Long id) {
         Expedient expedient =
                 expedients
@@ -64,22 +99,38 @@ public class ExpedientQueryService {
                         .orElseThrow(() -> new ResourceNotFoundException("Expedient", id));
         List<Resolution> resolutionItems =
                 resolutions.findByExpedientIdOrderByResolutionDateDescIdDesc(id);
-        List<ExpedientAdvisor> advisorItems =
-                advisors.findByExpedientIdOrderByAssignedAtDescIdDesc(id);
+        var advisorItem = advisors.findFirstByExpedientIdOrderByIdDesc(id);
         List<JuryMember> juryItems = juryMembers.findByExpedientIdOrderById(id);
         List<JuryDraw> drawItems = draws.findByExpedientIdOrderByDrawDateDescIdDesc(id);
         Defense defense = defenses.findByExpedientId(id).orElse(null);
+        var graduate = expedient.getGraduate();
+        var school = graduate.getSchool();
+        var research = researchWorks.findByExpedientId(id).orElse(null);
 
         return new ExpedientApiModels.Detail(
                 summary(expedient),
                 resolutionItems.stream().map(this::resolution).toList(),
-                advisorItems.stream().findFirst().map(this::advisor).orElse(null),
+                advisorItem.map(this::advisor).orElse(null),
                 juryItems.stream().map(this::jury).toList(),
                 drawItems.stream().map(this::draw).toList(),
                 defense == null
                         ? null
                         : new ExpedientApiModels.DefenseItem(
-                                defense.getId(), defense.getDefenseDate(), defense.getResult()));
+                                defense.getId(), defense.getDefenseDate(), defense.getResult()),
+                expedient.getDegree(),
+                expedient.getObservations(),
+                new ExpedientApiModels.GraduateItem(
+                        graduate.getId(),
+                        graduate.getFullName(),
+                        graduate.getDocumentNumber(),
+                        graduate.getStudentCode(),
+                        school == null ? null : school.getId(),
+                        school == null ? null : school.getName(),
+                        graduate.getAcademicProgram()),
+                research == null
+                        ? null
+                        : new ExpedientApiModels.ResearchItem(
+                                research.getId(), research.getTitle()));
     }
 
     private ExpedientApiModels.Summary summary(Expedient expedient) {
@@ -94,7 +145,7 @@ public class ExpedientQueryService {
                 expedient.getNumber(),
                 expedient.getStartDate(),
                 graduate.getId(),
-                (graduate.getFirstNames() + " " + graduate.getLastNames()).trim(),
+                graduate.getFullName(),
                 graduate.getDocumentNumber(),
                 school == null ? null : school.getId(),
                 school == null ? null : school.getName(),
@@ -106,7 +157,10 @@ public class ExpedientQueryService {
                 research == null ? null : research.getTitle(),
                 defense == null ? null : defense.getDefenseDate(),
                 defense == null ? null : defense.getResult(),
-                expedient.getUpdatedAt());
+                expedient.getUpdatedAt(),
+                expedient.getDegree(),
+                expedient.getObservations(),
+                graduate.getStudentCode());
     }
 
     private ExpedientApiModels.ResolutionItem resolution(Resolution value) {

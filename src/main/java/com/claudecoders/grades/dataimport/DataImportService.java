@@ -18,9 +18,6 @@ import com.claudecoders.grades.school.SchoolRepository;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.shared.service.EntityReferenceResolver;
 import com.claudecoders.grades.user.User;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -42,6 +39,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @Transactional(readOnly = true)
@@ -220,7 +220,7 @@ public class DataImportService {
         dataImport.setStatus("PREVIEW");
         try {
             dataImport.setStagedRecords(objectMapper.writeValueAsString(validRows));
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("No se pudo guardar la previsualización", exception);
         }
         dataImport = repository.save(dataImport);
@@ -257,7 +257,7 @@ public class DataImportService {
         try {
             records =
                     objectMapper.readValue(dataImport.getStagedRecords(), new TypeReference<>() {});
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("No se pudo recuperar la previsualización", exception);
         }
         for (StagedGraduateRecord record : records) {

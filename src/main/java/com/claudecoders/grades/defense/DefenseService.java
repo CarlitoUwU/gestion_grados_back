@@ -70,7 +70,8 @@ public class DefenseService {
                 && r.result() != null
                 && !r.result().isBlank()
                 && !"Pendiente".equalsIgnoreCase(r.result().trim()))
-            throw new ConflictException("Una sustentación futura solo puede tener resultado Pendiente");
+            throw new ConflictException(
+                    "Una sustentación futura solo puede tener resultado Pendiente");
     }
 
     private Defense toEntity(Defense v, DefenseRequest r) {

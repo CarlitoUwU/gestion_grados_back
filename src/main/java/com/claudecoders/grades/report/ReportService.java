@@ -1,8 +1,8 @@
 package com.claudecoders.grades.report;
 
 import com.claudecoders.grades.expedient.ExpedientQueryService;
-import com.claudecoders.grades.teacher.TeacherRepository;
 import com.claudecoders.grades.teacher.TeacherHistoryService;
+import com.claudecoders.grades.teacher.TeacherRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +45,8 @@ public class ReportService {
         var history =
                 teacherId == null
                         ? teachers.findAll().stream()
-                                .flatMap(teacher -> teacherHistory.history(teacher.getId()).stream())
+                                .flatMap(
+                                        teacher -> teacherHistory.history(teacher.getId()).stream())
                                 .toList()
                         : teacherHistory.history(teacherId);
         return new ReportResponse(
@@ -129,7 +130,8 @@ public class ReportService {
                                                                 java.util.Arrays.<Object>asList(
                                                                         draw.date(),
                                                                         detail.summary().number(),
-                                                                        detail.summary().graduateName(),
+                                                                        detail.summary()
+                                                                                .graduateName(),
                                                                         value(
                                                                                 detail.summary()
                                                                                         .schoolName()),
@@ -139,9 +141,11 @@ public class ReportService {
                                                                                                 teacher
                                                                                                         .teacherName())
                                                                                 .collect(
-                                                                                        java.util.stream
+                                                                                        java.util
+                                                                                                .stream
                                                                                                 .Collectors
-                                                                                                .joining("; ")),
+                                                                                                .joining(
+                                                                                                        "; ")),
                                                                         value(
                                                                                 draw
                                                                                         .resolutionNumber()))))

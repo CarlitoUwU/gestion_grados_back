@@ -60,7 +60,7 @@ public class TeacherHistoryService {
         return new TeacherHistoryResponse(
                 expedient.getId(),
                 expedient.getNumber(),
-                (graduate.getFirstNames() + " " + graduate.getLastNames()).trim(),
+                graduate.getFullName(),
                 research == null ? null : research.getTitle(),
                 school == null ? null : school.getName(),
                 participation,
