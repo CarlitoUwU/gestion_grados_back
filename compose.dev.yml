@@ -12,7 +12,7 @@ services:
       - "35729:35729"
     volumes:
       - .:/app
-      - ./.gradle/dependencies:/home/gradle/.gradle
+      - gradle-cache:/home/gradle/.gradle
     env_file:
       - path: .env
         required: false
@@ -37,3 +37,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+volumes:
+  gradle-cache:

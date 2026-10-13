@@ -24,6 +24,9 @@ Detener los servicios:
 docker compose -f compose.dev.yml down
 ```
 
+La caché de dependencias Gradle se conserva en el volumen Docker `gradle-cache`.
+Esto evita leer los JAR de dependencias a través del montaje del disco de Windows.
+
 ## Health check
 
 Con los contenedores levantados, abrir:
