@@ -30,6 +30,28 @@ public class Expedient extends BaseEntity {
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
+    @Column(name = "degree", length = 150)
+    private String degree;
+
+    @Column(name = "observations", columnDefinition = "text")
+    private String observations;
+
+    public String getDegree() {
+        return degree;
+    }
+
+    public void setDegree(String degree) {
+        this.degree = degree;
+    }
+
+    public String getObservations() {
+        return observations;
+    }
+
+    public void setObservations(String observations) {
+        this.observations = observations;
+    }
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "graduate_id", nullable = false)
     private Graduate graduate;

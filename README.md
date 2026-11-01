@@ -61,9 +61,28 @@ El frontend debe configurar su URL base como:
 VITE_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
-El sistema usa autenticación Bearer JWT de Google en producción. El JWT debe
-corresponder a un usuario activo registrado en `users`; actualmente solo se maneja
-el rol operativo `ADMIN_GT`.
+El sistema usa autenticación Bearer JWT de Google en todos los perfiles. La API
+valida firma, `issuer`, `audience` y expiración desde la configuración OAuth2. Un
+token ausente, inválido o vencido devuelve 401. Una identidad válida que no está
+registrada en `users`, está inactiva, no tiene un rol permitido o usa un correo
+fuera de los dominios institucionales devuelve 403.
+
+La política efectiva se configura sin secretos:
+
+```env
+ALLOWED_ROLES=ADMIN_GT
+ALLOWED_EMAIL_DOMAINS=unsa.edu.pe
+```
+
+Ambas listas aceptan valores separados por coma. También se valida `hd` del token
+cuando Google lo incluye y `email`/`email_verified` cuando están presentes. El
+perfil `dev` y `test` ya no habilitan operaciones anónimas fuera de salud,
+Swagger y el documento OpenAPI. Para QA se recomienda el perfil `prod` con
+`GOOGLE_OAUTH_ISSUER_URI` y `GOOGLE_OAUTH_AUDIENCE` explícitos; así se aplican las
+mismas reglas que en producción.
+
+`GET /api/v1/auth/me` requiere JWT y devuelve `id`, `email`, `fullName`,
+`googleSubject` (puede ser null), `role` y `active`.
 
 Endpoints agregados para sincronizar con el frontend:
 
@@ -83,6 +102,46 @@ Endpoints agregados para sincronizar con el frontend:
 - `GET /api/v1/accesses`
 - `POST /api/v1/accesses`
 - `PATCH /api/v1/accesses/{id}/active`
+
+### Dashboard
+
+`GET /api/v1/dashboard?year=2026&schoolId=5` acepta ambos filtros opcionales:
+`year` entre 1900 y 9999 (año de inicio) y `schoolId` positivo. Se aplican a todos
+los conteos, la distribución y las listas; un valor inválido devuelve 400 con
+`validationErrors`. La respuesta conserva los nombres `statusDistribution`,
+`upcomingDefenses` y `recentExpedients` (no `distribution`/`upcoming`/`recent`) y
+agrega:
+
+- `asOfDate`: fecha de corte `YYYY-MM-DD` calculada con el `Clock` de negocio en
+  `America/Lima`.
+- `timeZone`: siempre `America/Lima`.
+
+Las listas son arrays de `ExpedientApiModels.Summary` y se devuelven vacías cuando
+no hay datos. `Summary` conserva todos los campos existentes e incluye `degree`,
+`observations` y `studentCode` como campos nullable. `updatedAt` conserva el formato
+local existente, sin offset, y su zona documentada es `America/Lima`. Los criterios
+marcados *PO* en el documento de ajustes (definición de `active`, filtro de
+sustentaciones pendientes y orden de recientes) se implementaron como propuesta
+para QA; están pendientes de ratificación formal. Ver
+[decisiones pendientes](docs/decisiones-pendientes.md).
+
+### Resoluciones
+
+El CRUD existente se conserva:
+
+- `GET /api/v1/resolutions` devuelve un array completo de `ResolutionResponse`.
+- `GET /api/v1/resolutions/{id}` devuelve 200 o 404.
+- `POST /api/v1/resolutions` devuelve 201 con `Location`.
+- `PUT /api/v1/resolutions/{id}` devuelve 200 o 404.
+- `DELETE /api/v1/resolutions/{id}` devuelve 204, 404 o 409 si la resolución está
+  referenciada por asesor, jurado o sorteo.
+
+`expedientId` y `number` son obligatorios; `number` tiene máximo 100 caracteres y
+no puede repetirse dentro del expediente sin distinguir mayúsculas. `resolutionDate`,
+`resolutionType` (máximo 50, texto libre) y `fileUrl` admiten null. Una resolución
+referenciada no se puede mover a otro expediente. Crear, actualizar o eliminar una
+resolución actualiza en la misma transacción `updatedAt`/`updatedBy` del expediente
+con el usuario del JWT; el cliente no puede enviar un responsable arbitrario.
 
 ### Expedientes completos y reemplazo académico
 
@@ -157,3 +216,44 @@ coincidencia) o rechazada (dato requerido inválido). Solo las filas válidas qu
 preparadas para carga. Confirme explícitamente con `POST /api/v1/data-imports/{id}/confirm`;
 la inserción de graduando, expediente y trabajo se realiza en una transacción. El lote
 pendiente conserva el usuario, nombre de archivo y conteos para auditoría.
+
+## Pruebas de integración
+
+Con PostgreSQL de desarrollo levantado (`docker compose -f compose.dev.yml up -d postgres`):
+
+```sh
+DB_URL=jdbc:postgresql://localhost:5431/grades_management \
+DB_USER=root DB_PASSWORD=root \
+./gradlew test --tests 'com.claudecoders.grades.auth.AuthorizationIntegrationTest' \
+  --tests 'com.claudecoders.grades.dashboard.DashboardIntegrationTest' \
+  --tests 'com.claudecoders.grades.dashboard.DashboardOrderingTest' \
+  --tests 'com.claudecoders.grades.resolution.ResolutionIntegrationTest' \
+  --tests 'com.claudecoders.grades.expedient.ExpedientIntegrationTest'
+```
+
+Las pruebas usan `MockMvc`, usuarios y JWT de prueba; no desactivan usuarios reales.
+La prueba de expiración firma tokens con una clave RSA exclusiva de test y configura
+un `JwtDecoder` que valida firma, `issuer`, `audience` y expiración. Las pruebas con
+`.with(jwt())` verifican la política de registro, estado, rol y dominio; no acreditan
+por sí solas la validación criptográfica, que cubre la prueba con token firmado.
+
+## Configuración de QA
+
+No se almacenan secretos en el repositorio. QA debe definir por entorno, como mínimo:
+
+```env
+SPRING_PROFILES_ACTIVE=prod
+DB_URL=jdbc:postgresql://<host>:<puerto>/<base>
+DB_USER=<usuario>
+DB_PASSWORD=<password>
+GOOGLE_OAUTH_ISSUER_URI=https://accounts.google.com
+GOOGLE_OAUTH_AUDIENCE=<client-id-de-google>
+GOOGLE_OAUTH_CLIENT_ID=<client-id-de-google>
+ALLOWED_ROLES=ADMIN_GT
+ALLOWED_EMAIL_DOMAINS=unsa.edu.pe
+CORS_ALLOWED_ORIGINS=<origen-del-frontend>
+```
+
+El perfil `prod` activa la validación de `audience` y desactiva mensajes internos en
+las respuestas de error. El documento OpenAPI `/api/docs/openapi.json` describe el
+esquema `ApiError` y las respuestas 400/401/403/404/409/500 de las rutas de negocio.

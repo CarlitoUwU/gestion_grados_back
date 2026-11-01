@@ -8,8 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,13 +20,10 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class RegisteredUserFilter extends OncePerRequestFilter {
     private final CurrentUserService currentUser;
-    private final Environment environment;
     private final JsonMapper mapper;
 
-    public RegisteredUserFilter(
-            CurrentUserService currentUser, Environment environment, JsonMapper mapper) {
+    public RegisteredUserFilter(CurrentUserService currentUser, JsonMapper mapper) {
         this.currentUser = currentUser;
-        this.environment = environment;
         this.mapper = mapper;
     }
 
@@ -36,9 +32,9 @@ public class RegisteredUserFilter extends OncePerRequestFilter {
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
             var user = currentUser.find(authentication);
-            if (user.isEmpty() || !user.get().isActive()) {
+            if (user.isEmpty() || !currentUser.isAuthorized(user.get(), jwt)) {
                 response.setStatus(HttpStatus.FORBIDDEN.value());
                 response.setContentType("application/json;charset=UTF-8");
                 mapper.writeValue(
@@ -47,7 +43,7 @@ public class RegisteredUserFilter extends OncePerRequestFilter {
                                 Instant.now(),
                                 403,
                                 "Forbidden",
-                                "El usuario autenticado no está registrado o activo",
+                                "El usuario no está registrado, activo o autorizado",
                                 Map.of()));
                 return;
             }
@@ -58,12 +54,12 @@ public class RegisteredUserFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        if (environment.acceptsProfiles(Profiles.of("dev", "test"))
-                && !path.startsWith("/api/v1/expedients")) return true;
+        if (HttpMethod.OPTIONS.matches(request.getMethod())) return true;
         return path.equals("/health")
                 || path.startsWith("/actuator/health")
                 || path.startsWith("/api/docs")
                 || path.startsWith("/swagger-ui")
+                || path.startsWith("/api/swagger-ui")
                 || path.startsWith("/v3/api-docs");
     }
 }

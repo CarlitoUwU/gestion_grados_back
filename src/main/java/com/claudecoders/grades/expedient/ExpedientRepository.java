@@ -37,7 +37,7 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
               and (:modalityId is null or m.id = :modalityId)
               and (:year is null or year(e.startDate) = :year)
               and (
-                    :search is null
+                    :search = ''
                     or lower(e.number) like lower(concat('%', :search, '%'))
                     or lower(g.firstNames) like lower(concat('%', :search, '%'))
                     or lower(g.lastNames) like lower(concat('%', :search, '%'))

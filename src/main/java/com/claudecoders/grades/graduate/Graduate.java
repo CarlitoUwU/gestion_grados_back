@@ -36,6 +36,33 @@ public class Graduate extends BaseEntity {
     @Column(name = "academic_program", length = 200)
     private String academicProgram;
 
+    @Column(name = "full_name", length = 300)
+    private String fullName;
+
+    @Column(name = "student_code", length = 50)
+    private String studentCode;
+
+    public String getFullName() {
+        return fullName == null || fullName.isBlank()
+                ? (java.util.Objects.toString(firstNames, "")
+                                + " "
+                                + java.util.Objects.toString(lastNames, ""))
+                        .trim()
+                : fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getStudentCode() {
+        return studentCode;
+    }
+
+    public void setStudentCode(String studentCode) {
+        this.studentCode = studentCode;
+    }
+
     public Long getId() {
         return id;
     }

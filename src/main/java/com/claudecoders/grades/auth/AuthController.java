@@ -1,6 +1,10 @@
 package com.claudecoders.grades.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +28,27 @@ public class AuthController {
             summary = "Obtener usuario autenticado",
             description =
                     "Devuelve el usuario activo registrado en users asociado al JWT de Google."
-                            + " El sistema usa un único rol operativo: ADMIN_GT.",
+                            + " googleSubject puede ser null. El sistema usa un único rol"
+                            + " operativo: ADMIN_GT.",
             security = @SecurityRequirement(name = "bearer-jwt"))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Usuario autenticado"),
+        @ApiResponse(
+                responseCode = "401",
+                description = "JWT ausente, inválido o vencido",
+                content =
+                        @Content(
+                                mediaType = "application/json",
+                                schema = @Schema(ref = "#/components/schemas/ApiError"))),
+        @ApiResponse(
+                responseCode = "403",
+                description = "Identidad no registrada, inactiva o no autorizada",
+                content =
+                        @Content(
+                                mediaType = "application/json",
+                                schema = @Schema(ref = "#/components/schemas/ApiError"))),
+        @ApiResponse(responseCode = "500", description = "Error interno")
+    })
     public ResponseEntity<CurrentUserResponse> me(Authentication authentication) {
         return ResponseEntity.ok(CurrentUserResponse.from(currentUser.from(authentication)));
     }

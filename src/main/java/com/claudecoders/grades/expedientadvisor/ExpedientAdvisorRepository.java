@@ -4,6 +4,8 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExpedientAdvisorRepository extends JpaRepository<ExpedientAdvisor, Long> {
+    boolean existsByResolutionId(Long resolutionId);
+
     List<ExpedientAdvisor> findByExpedientIdOrderByAssignedAtDescIdDesc(Long expedientId);
 
     List<ExpedientAdvisor> findByTeacherIdOrderByAssignedAtDescIdDesc(Long teacherId);
