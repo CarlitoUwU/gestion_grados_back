@@ -7,15 +7,18 @@ import com.claudecoders.grades.jurydraw.JuryDrawRepository;
 import com.claudecoders.grades.jurymember.JuryMemberRepository;
 import com.claudecoders.grades.resolution.dto.ResolutionRequest;
 import com.claudecoders.grades.resolution.dto.ResolutionResponse;
+import com.claudecoders.grades.shared.exception.BusinessValidationException;
 import com.claudecoders.grades.shared.exception.ConflictException;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.shared.service.EntityReferenceResolver;
+import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
@@ -78,6 +81,38 @@ public class ResolutionService {
         if (moved) touch(target, authentication);
         repository.flush();
         return ResolutionResponse.from(value);
+    }
+
+    @Transactional
+    public ResolutionResponse uploadDocument(
+            Long id, MultipartFile file, String downloadUrl, Authentication authentication)
+            throws IOException {
+        Resolution value = get(id);
+        if (file == null
+                || file.isEmpty()
+                || !"application/pdf".equalsIgnoreCase(file.getContentType()))
+            throw new BusinessValidationException(
+                    "file", "Debe proporcionar un archivo application/pdf");
+        if (file.getSize() > 10L * 1024 * 1024) throw new DocumentTooLargeException();
+        byte[] data = file.getBytes();
+        if (data.length < 5
+                || data[0] != '%'
+                || data[1] != 'P'
+                || data[2] != 'D'
+                || data[3] != 'F'
+                || data[4] != '-')
+            throw new BusinessValidationException("file", "El contenido no corresponde a un PDF");
+        value.setDocumentData(data);
+        value.setFileUrl(downloadUrl);
+        touch(value.getExpedient(), authentication);
+        repository.flush();
+        return ResolutionResponse.from(value);
+    }
+
+    public byte[] document(Long id) {
+        byte[] data = get(id).getDocumentData();
+        if (data == null) throw new ResourceNotFoundException("Documento de resolución", id);
+        return data;
     }
 
     @Transactional

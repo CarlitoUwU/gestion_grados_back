@@ -3,6 +3,7 @@ package com.claudecoders.grades.user;
 import com.claudecoders.grades.user.dto.UserRequest;
 import com.claudecoders.grades.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -34,6 +35,7 @@ public class AccessController {
         return users.findAll();
     }
 
+    @ApiResponse(responseCode = "201", description = "Creado")
     @PostMapping
     @Operation(
             summary = "Registrar acceso administrativo",

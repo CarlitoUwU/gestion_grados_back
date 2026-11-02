@@ -41,14 +41,17 @@ public class ReportService {
                         .toList());
     }
 
-    public ReportResponse teachers(Long teacherId) {
+    public ReportResponse teachers(Long teacherId, Integer year) {
         var history =
                 teacherId == null
                         ? teachers.findAll().stream()
                                 .flatMap(
-                                        teacher -> teacherHistory.history(teacher.getId()).stream())
+                                        teacher ->
+                                                teacherHistory
+                                                        .history(teacher.getId(), year)
+                                                        .stream())
                                 .toList()
-                        : teacherHistory.history(teacherId);
+                        : teacherHistory.history(teacherId, year);
         return new ReportResponse(
                 "Asesores y jurados",
                 List.of(

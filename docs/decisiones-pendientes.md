@@ -57,18 +57,13 @@ Si PO ratifica otro criterio, deben actualizarse conjuntamente el servicio, la
 consulta SQL de comparación y este contrato. El frontend muestra lo que responde
 la API; no se renombraron campos ni se envolvieron arrays en objetos.
 
-## Ampliaciones nuevas no implementadas
+## Documento digital implementado y ampliaciones pendientes
 
-No se implementaron porque todavía no tienen consumo frontend ni contrato
-confirmado. No se agregaron 412/428/413/415 al OpenAPI base:
-
-1. **Documento digital de resolución**
-   - Propuesta: `PUT/GET /api/v1/resolutions/{id}/document` con multipart,
-     almacenamiento administrado, autorización, límites de tamaño y tipos
-     configurables.
-   - Decisión pendiente: si el actual `fileUrl` de texto satisface F-GT-09.2 o si
-     se requiere adjunto administrado. No se expone una URL pública que eluda
-     autorización.
+1. **Documento digital de resolución — implementado el 2026-11-02**
+   - Contrato de BACK_OBSERVACIONES.md: `POST/GET
+     /api/v1/resolutions/{id}/document`, PDF de hasta 10 MiB y descarga autenticada.
+   - El documento se almacena en PostgreSQL. Ver README para validaciones y
+     respuestas 400/404/413. El frontend no se modifica.
 
 2. **Concurrencia optimista del reemplazo académico**
    - Propuesta: `ETag` fuerte en `GET /expedients/{id}/detail` e `If-Match`

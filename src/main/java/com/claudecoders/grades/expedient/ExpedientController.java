@@ -77,6 +77,7 @@ public class ExpedientController {
         return ResponseEntity.ok(service.update(id, request, authentication));
     }
 
+    @ApiResponse(responseCode = "201", description = "Creado")
     @PostMapping("/complete")
     @Operation(summary = "Registrar expediente, graduando e investigación en una transacción")
     public ResponseEntity<ExpedientApiModels.Detail> createComplete(
