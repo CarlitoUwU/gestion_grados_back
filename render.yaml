@@ -1,0 +1,54 @@
+# Blueprint de Render: API Spring Boot (Docker) + PostgreSQL.
+# Los valores con sync: false se completan en el panel de Render al crear el Blueprint.
+databases:
+  - name: grados-db
+    databaseName: grades_management
+    user: grados
+    plan: free
+
+services:
+  - type: web
+    name: grados-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        fromDatabase:
+          name: grados-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: grados-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: grados-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: grados-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: grados-db
+          property: password
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: DB_POOL_MIN_IDLE
+        value: "1"
+      - key: GOOGLE_OAUTH_ISSUER_URI
+        value: https://accounts.google.com
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_AUDIENCE
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: ALLOWED_ROLES
+        value: ADMIN_GT
+      - key: ALLOWED_EMAIL_DOMAINS
+        value: unsa.edu.pe
