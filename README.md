@@ -257,3 +257,41 @@ CORS_ALLOWED_ORIGINS=<origen-del-frontend>
 El perfil `prod` activa la validación de `audience` y desactiva mensajes internos en
 las respuestas de error. El documento OpenAPI `/api/docs/openapi.json` describe el
 esquema `ApiError` y las respuestas 400/401/403/404/409/500 de las rutas de negocio.
+
+## Observaciones de integración: búsqueda, docentes y PDF
+
+- `GET /api/v1/expedients/search` acepta `search` ausente, vacío o con espacios.
+  La búsqueda compara sin distinguir mayúsculas ni acentos e incluye número,
+  nombres/apellidos (también nombre completo), documento y título. Flyway V5
+  habilita `unaccent`; el usuario de migraciones debe poder instalar esa extensión.
+- `POST /api/v1/expedients/complete` reutiliza el graduando por documento no vacío,
+  sin sobrescribir su ficha compartida. Las altas completas concurrentes con el
+  mismo documento se serializan en PostgreSQL. Ante duplicados históricos se
+  reutiliza el ID menor; no se borran ni fusionan datos existentes. Un número de
+  expediente repetido devuelve 409 y `El número de expediente ya está registrado`.
+- `GET /api/v1/teachers/{id}/history` devuelve las designaciones vigentes, sin
+  sorteos. Para asesores se toma la última fecha de asignación (fecha de registro
+  si falta), desempatando por ID. Para jurados se toma el último ID por cargo.
+  Los tres campos de resolución se incluyen como null cuando no hay resolución.
+- `GET /api/v1/reports/teachers?teacherId=...&year=2026` acepta ambos filtros
+  opcionales. `year` tiene cuatro dígitos (1000–9999): asesorías por `assignedAt`
+  y jurados por fecha de resolución; si falta esa fecha se usa la de registro de
+  la participación. No usa el año de inicio del expediente.
+- `POST /api/v1/resolutions/{id}/document`: multipart con parte `file`, MIME
+  `application/pdf`, cabecera PDF y hasta **10 MiB**. Devuelve 200 con
+  `ResolutionResponse`; archivo ausente/inválido: 400, resolución inexistente:
+  404, tamaño excesivo: 413. El límite multipart global sigue disponible para
+  otras cargas; su exceso también devuelve 413.
+- El PDF se almacena en PostgreSQL (migración V6), en la misma transacción que
+  `fileUrl` y los metadatos del expediente. Reemplazarlo sustituye el contenido.
+  `GET /api/v1/resolutions/{id}/document` descarga el PDF y **requiere Bearer JWT**;
+  el cliente debe descargarlo con Authorization. No es un enlace público.
+  En despliegues con proxy, configurar correctamente el esquema/host reenviado
+  para que las URLs generadas correspondan a la dirección externa.
+- Los PUT existentes mantienen su contrato: el CRUD guarda `fileUrl` recibido;
+  el reemplazo académico preserva el documento de las resoluciones conservadas
+  por ID. No se ha modificado el frontend ni activado su feature flag.
+
+La verificación automática está en `.github/workflows/backend.yml`: Java 25,
+PostgreSQL 18, `gradlew check` y publicación del informe de pruebas. Las nuevas
+pruebas están en `BackendObservationsIntegrationTest`.

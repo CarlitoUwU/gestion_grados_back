@@ -16,10 +16,11 @@ public record ResolutionRequest(
         @Schema(
                         description =
                                 "Número único dentro del expediente, sin distinguir mayúsculas",
+                        minLength = 1,
                         maxLength = 100,
                         example = "RES-2026-001")
                 @NotBlank
-                @Size(max = 100)
+                @Size(min = 1, max = 100)
                 String number,
         @Schema(description = "Fecha de la resolución", example = "2026-10-01", nullable = true)
                 LocalDate resolutionDate,
@@ -31,7 +32,8 @@ public record ResolutionRequest(
                 @Size(max = 50)
                 String resolutionType,
         @Schema(
-                        description = "Referencia documental existente; no es una URL pública",
+                        description =
+                                "Enlace documental; use http o https para abrirlo desde el cliente",
                         example = "https://documentos.example/res-2026-001.pdf",
                         nullable = true)
                 String fileUrl) {}

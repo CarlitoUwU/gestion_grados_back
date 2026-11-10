@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record ExpedientRequest(
-        @NotBlank @Size(max = 100) String number,
+        @Schema(minLength = 1) @NotBlank @Size(min = 1, max = 100) String number,
         @NotNull LocalDate startDate,
         @NotNull Long graduateId,
         Long modalityId,

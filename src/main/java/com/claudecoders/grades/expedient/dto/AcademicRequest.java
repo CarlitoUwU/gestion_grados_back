@@ -1,5 +1,6 @@
 package com.claudecoders.grades.expedient.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +19,7 @@ public record AcademicRequest(
     public record ResolutionInput(
             Long id,
             String clientId,
-            @NotBlank @Size(max = 100) String number,
+            @Schema(minLength = 1) @NotBlank @Size(min = 1, max = 100) String number,
             LocalDate date,
             @Size(max = 50) String type) {}
 
@@ -26,7 +27,11 @@ public record AcademicRequest(
             Long id, @NotNull Long teacherId, String resolutionClientId, LocalDate assignedAt) {}
 
     public record JuryInput(
-            Long id, @NotNull Long teacherId, @NotNull String role, String resolutionClientId) {}
+            Long id,
+            @NotNull Long teacherId,
+            @Schema(allowableValues = {"PRESIDENTE", "SECRETARIO", "VOCAL", "ACCESITARIO"}) @NotNull
+                    String role,
+            String resolutionClientId) {}
 
     public record DrawInput(
             Long id,

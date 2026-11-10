@@ -96,3 +96,8 @@ target/
 
 ### Docker ###
 postgres_data/
+
+# Backend verification pipeline
+!.github/
+!.github/workflows/
+!.github/workflows/backend.yml

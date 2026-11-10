@@ -13,8 +13,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -25,7 +28,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Validated
 @RestController
@@ -135,6 +141,47 @@ public class ResolutionController {
             @Valid @RequestBody ResolutionRequest request,
             Authentication authentication) {
         return ResponseEntity.ok(service.update(id, request, authentication));
+    }
+
+    @PostMapping(value = "/{id}/document", consumes = "multipart/form-data")
+    @Operation(
+            summary = "Subir PDF de resolución",
+            description =
+                    "PDF de hasta 10 MiB; se almacena en PostgreSQL y su descarga requiere JWT.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Documento guardado"),
+        @ApiResponse(responseCode = "400", description = "Archivo ausente o PDF inválido"),
+        @ApiResponse(responseCode = "404", description = "Resolución inexistente"),
+        @ApiResponse(responseCode = "413", description = "Supera 10 MiB")
+    })
+    public ResolutionResponse uploadDocument(
+            @PathVariable Long id,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            Authentication authentication)
+            throws IOException {
+        String url =
+                ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/api/v1/resolutions/{id}/document")
+                        .buildAndExpand(id)
+                        .toUriString();
+        return service.uploadDocument(id, file, url, authentication);
+    }
+
+    @GetMapping(value = "/{id}/document", produces = "application/pdf")
+    @Operation(
+            summary = "Descargar PDF de resolución",
+            description = "Requiere la misma autorización que el CRUD de resoluciones.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "PDF"),
+        @ApiResponse(responseCode = "404", description = "Documento inexistente")
+    })
+    public ResponseEntity<byte[]> document(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .cacheControl(CacheControl.noStore())
+                .header("Content-Disposition", "attachment; filename=\"resolucion-" + id + ".pdf\"")
+                .header("X-Content-Type-Options", "nosniff")
+                .body(service.document(id));
     }
 
     @DeleteMapping("/{id}")

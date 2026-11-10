@@ -1,5 +1,6 @@
 package com.claudecoders.grades.shared.exception;
 
+import com.claudecoders.grades.resolution.DocumentTooLargeException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -103,6 +106,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> handleMalformedJson(HttpMessageNotReadableException exception) {
         return response(HttpStatus.BAD_REQUEST, "JSON mal formado o valor no admitido", Map.of());
+    }
+
+    @ExceptionHandler({MaxUploadSizeExceededException.class, DocumentTooLargeException.class})
+    ResponseEntity<ApiError> handleDocumentTooLarge(Exception exception) {
+        return response(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "El archivo supera el tamaño máximo permitido",
+                Map.of());
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    ResponseEntity<ApiError> handleMissingPart(Exception exception) {
+        return response(HttpStatus.BAD_REQUEST, "Debe proporcionar el archivo file", Map.of());
     }
 
     @ExceptionHandler(Exception.class)
