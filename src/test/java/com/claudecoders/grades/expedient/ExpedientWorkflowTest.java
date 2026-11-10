@@ -12,6 +12,7 @@ import com.claudecoders.grades.researchwork.ResearchWorkRepository;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.teacher.Teacher;
 import com.claudecoders.grades.teacher.TeacherRepository;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ import org.springframework.web.server.ResponseStatusException;
             "spring.docker.compose.enabled=false",
             "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:9/jwks"
         })
-class ExpedientWorkflowTest {
+public class ExpedientWorkflowTest {
     @Autowired ExpedientService service;
     @Autowired ExpedientProcessService processes;
     @Autowired ExpedientQueryService queries;
@@ -47,6 +48,9 @@ class ExpedientWorkflowTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbc.execute(
+                "CREATE ALIAS IF NOT EXISTS unaccent FOR"
+                        + " 'com.claudecoders.grades.expedient.ExpedientWorkflowTest.unaccent'");
         for (String table :
                 List.of(
                         "jury_draw_members",
@@ -62,6 +66,12 @@ class ExpedientWorkflowTest {
                         "expedient_statuses")) {
             jdbc.update("delete from " + table);
         }
+    }
+
+    public static String unaccent(String value) {
+        return value == null
+                ? null
+                : Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
     }
 
     @Test
@@ -125,6 +135,8 @@ class ExpedientWorkflowTest {
         var second = queries.search("Sofia Valdivia", null, null, null, 2026, 1, 1);
         assertThat(first.totalElements()).isEqualTo(2);
         assertThat(first.totalPages()).isEqualTo(2);
+        assertThat(queries.search("Sofía Valdivia", null, null, null, 2026, 0, 1).totalElements())
+                .isEqualTo(2);
         assertThat(queries.search(null, null, null, null, null, 0, 1).totalElements()).isEqualTo(2);
         assertThat(first.content().getFirst().number())
                 .isNotEqualTo(second.content().getFirst().number());

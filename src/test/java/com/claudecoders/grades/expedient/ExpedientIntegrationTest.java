@@ -100,7 +100,7 @@ class ExpedientIntegrationTest {
                 """
                 {"number":"%s","startDate":"2025-01-01","modalityId":%d,"statusId":%d,
                 "graduate":{"documentNumber":"DNI-%s","fullName":"Nombre Completo","schoolId":%d},
-                "research":{"title":"TÃ­tulo %s","workType":"TESIS"}}
+                "research":{"title":"Título %s","workType":"TESIS"}}
                 """
                         .formatted(
                                 number.toLowerCase(),
