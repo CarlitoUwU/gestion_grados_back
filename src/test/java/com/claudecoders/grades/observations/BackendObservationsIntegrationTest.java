@@ -565,4 +565,60 @@ class BackendObservationsIntegrationTest {
                     .andExpect(status().isBadRequest());
         }
     }
+
+    String etag(long id) throws Exception {
+        String etag =
+                mvc.perform(get("/api/v1/expedients/{id}/detail", id).with(auth()))
+                        .andExpect(status().isOk())
+                        .andReturn()
+                        .getResponse()
+                        .getHeader("ETag");
+        assertNotNull(etag);
+        return etag;
+    }
+
+    org.springframework.test.web.servlet.ResultActions putAcademic(
+            long id, String ifMatch, String resolution) throws Exception {
+        var request =
+                put("/api/v1/expedients/{id}/academic", id)
+                        .with(auth())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                """
+                                {"resolutions":[{"clientId":"r1","number":"%s"}],
+                                 "advisor":null,"jury":null,"draws":[],"defense":null}
+                                """
+                                        .formatted(resolution));
+        if (ifMatch != null) request.header("If-Match", ifMatch);
+        return mvc.perform(request);
+    }
+
+    @Test
+    void academicReplacementHonorsIfMatchVersion() throws Exception {
+        long id = complete("V-" + suffix).path("summary").path("id").asLong();
+        String first = etag(id);
+        assertEquals(first, etag(id));
+
+        putAcademic(id, first, "RV1-" + suffix).andExpect(status().isOk());
+        entityManager.flush();
+        entityManager.clear();
+        String second = etag(id);
+        assertNotEquals(first, second);
+
+        putAcademic(id, first, "RV2-" + suffix)
+                .andExpect(status().isPreconditionFailed())
+                .andExpect(jsonPath("$.status").value(412))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(org.hamcrest.Matchers.containsString("cambió")));
+        entityManager.clear();
+        mvc.perform(get("/api/v1/expedients/{id}/detail", id).with(auth()))
+                .andExpect(jsonPath("$.resolutions[0].number").value("RV1-" + suffix));
+
+        putAcademic(id, "*", "RV3-" + suffix).andExpect(status().isOk());
+        putAcademic(id, null, "RV4-" + suffix)
+                .andExpect(status().isPreconditionRequired())
+                .andExpect(jsonPath("$.status").value(428));
+        putAcademic(999_999_999L, second, "RV5-" + suffix).andExpect(status().isNotFound());
+    }
 }

@@ -16,6 +16,11 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
     @Query("select e from Expedient e where lower(e.number) = lower(:number)")
     java.util.Optional<Expedient> findForUpdateByNumber(@Param("number") String number);
 
+    @org.springframework.data.jpa.repository.Lock(
+            jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Expedient e where e.id = :id")
+    java.util.Optional<Expedient> findForUpdateById(@Param("id") Long id);
+
     boolean existsByGraduateIdAndIdNot(Long graduateId, Long id);
 
     String SEARCH_FILTER =
