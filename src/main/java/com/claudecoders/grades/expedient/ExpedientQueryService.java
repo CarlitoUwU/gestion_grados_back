@@ -128,12 +128,12 @@ public class ExpedientQueryService {
         List<JuryMember> juryItems = juryMembers.findByExpedientIdOrderById(id);
         List<JuryDraw> drawItems = draws.findByExpedientIdOrderByDrawDateDescIdDesc(id);
         Defense defense = defenses.findByExpedientId(id).orElse(null);
+        ResearchWork research = researchWorks.findByExpedientId(id).orElse(null);
         var graduate = expedient.getGraduate();
         var school = graduate.getSchool();
-        var research = researchWorks.findByExpedientId(id).orElse(null);
 
         return new ExpedientApiModels.Detail(
-                summary(expedient),
+                summary(expedient, research, defense),
                 resolutionItems.stream().map(this::resolution).toList(),
                 advisorItem.map(this::advisor).orElse(null),
                 juryItems.stream().map(this::jury).toList(),

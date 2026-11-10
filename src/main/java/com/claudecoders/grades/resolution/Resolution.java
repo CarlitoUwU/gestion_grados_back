@@ -2,6 +2,7 @@ package com.claudecoders.grades.resolution;
 
 import com.claudecoders.grades.expedient.Expedient;
 import com.claudecoders.grades.shared.audit.BaseEntity;
+import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,6 +14,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(
@@ -43,6 +46,19 @@ public class Resolution extends BaseEntity {
 
     @Column(name = "file_url", columnDefinition = "text")
     private String fileUrl;
+
+    @Basic(fetch = FetchType.LAZY)
+    @JdbcTypeCode(SqlTypes.VARBINARY)
+    @Column(name = "document_data")
+    private byte[] documentData;
+
+    public byte[] getDocumentData() {
+        return documentData;
+    }
+
+    public void setDocumentData(byte[] documentData) {
+        this.documentData = documentData;
+    }
 
     public Long getId() {
         return id;

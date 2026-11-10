@@ -75,7 +75,7 @@ class ExpedientIntegrationTest {
     void completeSearchStatusAndAcademicReplacement() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         User user = new User();
-        user.setEmail(suffix + "@test.local");
+        user.setEmail(suffix + "@unsa.edu.pe");
         user.setGoogleSubject("user-" + suffix);
         String subject = user.getGoogleSubject();
         user.setFullName("Operador " + suffix);
@@ -138,15 +138,26 @@ class ExpedientIntegrationTest {
                         .andExpect(status().isCreated())
                         .andExpect(jsonPath("$.summary.number").value(number))
                         .andExpect(jsonPath("$.summary.graduateLastNames").value(""))
+                        .andExpect(jsonPath("$.summary.degree").isEmpty())
+                        .andExpect(jsonPath("$.summary.observations").isEmpty())
+                        .andExpect(jsonPath("$.summary.studentCode").isEmpty())
                         .andExpect(jsonPath("$.summary.createdByName").value(user.getFullName()))
+                        .andExpect(jsonPath("$.graduate.id").isNumber())
+                        .andExpect(jsonPath("$.research.title").value("Título " + suffix))
                         .andReturn();
         JsonNode detail = mapper.readTree(created.getResponse().getContentAsString());
         long id = detail.path("summary").path("id").asLong();
         long graduateId = detail.path("summary").path("graduateId").asLong();
-        mvc.perform(get("/api/v1/expedients/search").param("search", "DNI-" + suffix))
+        mvc.perform(
+                        get("/api/v1/expedients/search")
+                                .param("search", "DNI-" + suffix)
+                                .with(jwt().jwt(j -> j.subject(subject))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id));
-        mvc.perform(get("/api/v1/expedients/search").param("search", "TÃ­tulo " + suffix))
+        mvc.perform(
+                        get("/api/v1/expedients/search")
+                                .param("search", "Título " + suffix)
+                                .with(jwt().jwt(j -> j.subject(subject))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id));
         mvc.perform(
@@ -171,6 +182,7 @@ class ExpedientIntegrationTest {
                                 .content(academic))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resolutions[0].number").value("R-1"))
+                .andExpect(jsonPath("$.summary.updatedByName").value(user.getFullName()))
                 .andExpect(jsonPath("$.draws[0].teachers[0].teacherId").value(teacher.getId()));
         var resolution =
                 resolutions.findByExpedientIdOrderByResolutionDateDescIdDesc(id).getFirst();
@@ -198,7 +210,9 @@ class ExpedientIntegrationTest {
                                 .content(invalid))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.validationErrors['draws[0].resolutionClientId']").exists());
-        mvc.perform(get("/api/v1/expedients/{id}/detail", id))
+        mvc.perform(
+                        get("/api/v1/expedients/{id}/detail", id)
+                                .with(jwt().jwt(j -> j.subject(subject))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resolutions[0].number").value("R-1"));
         mvc.perform(

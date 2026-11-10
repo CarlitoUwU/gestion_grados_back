@@ -7,8 +7,6 @@ import java.util.Map;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
@@ -33,10 +31,7 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            Environment environment,
-            RegisteredUserFilter registeredUserFilter,
-            JsonMapper mapper)
+            HttpSecurity http, RegisteredUserFilter registeredUserFilter, JsonMapper mapper)
             throws Exception {
         AuthenticationEntryPoint authenticationEntryPoint =
                 (request, response, exception) -> {
@@ -80,40 +75,23 @@ public class SecurityConfig {
                                                 }))
                 .addFilterAfter(registeredUserFilter, BearerTokenAuthenticationFilter.class);
 
-        if (environment.acceptsProfiles(Profiles.of("dev", "test"))) {
-            http.authorizeHttpRequests(
-                    authorize ->
-                            authorize
-                                    .requestMatchers(
-                                            HttpMethod.POST,
-                                            "/api/v1/expedients",
-                                            "/api/v1/expedients/**")
-                                    .authenticated()
-                                    .requestMatchers(HttpMethod.PUT, "/api/v1/expedients/**")
-                                    .authenticated()
-                                    .requestMatchers(HttpMethod.PATCH, "/api/v1/expedients/**")
-                                    .authenticated()
-                                    .requestMatchers(HttpMethod.DELETE, "/api/v1/expedients/**")
-                                    .authenticated()
-                                    .anyRequest()
-                                    .permitAll());
-        } else {
-            http.authorizeHttpRequests(
-                    authorize ->
-                            authorize
-                                    .requestMatchers(
-                                            "/health",
-                                            "/actuator/health",
-                                            "/actuator/health/**",
-                                            "/api/docs",
-                                            "/api/docs/**",
-                                            "/api/swagger-ui/**",
-                                            "/swagger-ui/**",
-                                            "/v3/api-docs/**")
-                                    .permitAll()
-                                    .anyRequest()
-                                    .authenticated());
-        }
+        http.authorizeHttpRequests(
+                authorize ->
+                        authorize
+                                .requestMatchers(HttpMethod.OPTIONS, "/**")
+                                .permitAll()
+                                .requestMatchers(
+                                        "/health",
+                                        "/actuator/health",
+                                        "/actuator/health/**",
+                                        "/api/docs",
+                                        "/api/docs/**",
+                                        "/api/swagger-ui/**",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**")
+                                .permitAll()
+                                .anyRequest()
+                                .authenticated());
 
         return http.build();
     }

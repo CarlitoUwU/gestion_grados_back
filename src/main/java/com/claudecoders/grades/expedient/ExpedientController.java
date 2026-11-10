@@ -8,6 +8,7 @@ import com.claudecoders.grades.expedient.dto.ExpedientRequest;
 import com.claudecoders.grades.expedient.dto.ExpedientResponse;
 import com.claudecoders.grades.expedient.dto.ExpedientWriteRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -82,6 +83,7 @@ public class ExpedientController {
         return service.update(number, request, auth);
     }
 
+    @ApiResponse(responseCode = "201", description = "Creado")
     @PostMapping("/complete")
     @Operation(summary = "Registrar expediente, graduando e investigación en una transacción")
     public ResponseEntity<ExpedientApiModels.Detail> createComplete(

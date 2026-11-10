@@ -26,6 +26,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,7 @@ public class ExpedientService {
     private final JuryDrawRepository draws;
     private final DefenseRepository defenses;
     private final Clock clock;
+    private final JdbcTemplate jdbc;
 
     public ExpedientService(
             ExpedientRepository repository,
@@ -53,7 +56,8 @@ public class ExpedientService {
             ResearchWorkRepository researchWorks,
             JuryDrawRepository draws,
             DefenseRepository defenses,
-            Clock clock) {
+            Clock clock,
+            JdbcTemplate jdbc) {
         this.repository = repository;
         this.refs = refs;
         this.currentUser = currentUser;
@@ -63,6 +67,7 @@ public class ExpedientService {
         this.draws = draws;
         this.defenses = defenses;
         this.clock = clock;
+        this.jdbc = jdbc;
     }
 
     public List<ExpedientResponse> findAll() {
@@ -90,7 +95,7 @@ public class ExpedientService {
         if (!v.getNumber().equalsIgnoreCase(r.number().trim())) checkNumber(r.number(), id);
         toEntity(v, r);
         v.setUpdatedBy(currentUser.from(authentication));
-        v.setUpdatedAt(java.time.LocalDateTime.now(clock));
+        v.setUpdatedAt(LocalDateTime.now(clock));
         return ExpedientResponse.from(v);
     }
 
@@ -100,7 +105,33 @@ public class ExpedientService {
         User user = currentUser.from(authentication);
         checkNumber(r.number(), null);
         checkComplete(r);
-        Graduate graduate = graduates.save(fillGraduate(new Graduate(), r.graduate()));
+        String document = r.graduate().documentNumber();
+        document = document == null || document.isBlank() ? null : document.trim();
+        Graduate graduate;
+        if (document == null) {
+            graduate = graduates.save(fillGraduate(new Graduate(), r.graduate()));
+        } else {
+            // Serialize complete registrations for the same document, including first insertion.
+            String key = document;
+            jdbc.execute(
+                    (ConnectionCallback<Void>)
+                            connection -> {
+                                try (var statement =
+                                        connection.prepareStatement(
+                                                "select pg_advisory_xact_lock(hashtextextended(?, 0))")) {
+                                    statement.setString(1, key);
+                                    statement.execute();
+                                }
+                                return null;
+                            });
+            graduate =
+                    graduates
+                            .findFirstByDocumentNumberOrderByIdAsc(document)
+                            .orElseGet(
+                                    () ->
+                                            graduates.save(
+                                                    fillGraduate(new Graduate(), r.graduate())));
+        }
         Expedient value = new Expedient();
         value.setGraduate(graduate);
         fillComplete(value, r, user);
@@ -172,7 +203,7 @@ public class ExpedientService {
         Expedient value = get(id);
         value.setStatus(status);
         value.setUpdatedBy(currentUser.from(authentication));
-        value.setUpdatedAt(java.time.LocalDateTime.now(clock));
+        value.setUpdatedAt(LocalDateTime.now(clock));
         repository.flush();
         return queries.summary(id);
     }
@@ -191,7 +222,7 @@ public class ExpedientService {
     private void checkNumber(String n, Long id) {
         if (repository.existsByNumberIgnoreCase(n.trim())
                 && (id == null || !get(id).getNumber().equalsIgnoreCase(n.trim())))
-            throw new ConflictException("Ya existe un Expedient con ese número");
+            throw new ConflictException("El número de expediente ya está registrado");
     }
 
     private Expedient toEntity(Expedient v, ExpedientRequest r) {
@@ -250,7 +281,7 @@ public class ExpedientService {
         value.setModality(refs.modality(r.modalityId()));
         value.setStatus(refs.status(r.statusId()));
         value.setUpdatedBy(user);
-        value.setUpdatedAt(java.time.LocalDateTime.now(clock));
+        value.setUpdatedAt(LocalDateTime.now(clock));
     }
 
     private ResearchWork fillResearch(

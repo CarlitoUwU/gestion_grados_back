@@ -7,6 +7,8 @@ import com.claudecoders.grades.researchwork.ResearchWorkRepository;
 import com.claudecoders.grades.resolution.Resolution;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.teacher.dto.TeacherHistoryResponse;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -32,15 +34,28 @@ public class TeacherHistoryService {
     }
 
     public List<TeacherHistoryResponse> history(Long teacherId) {
+        return history(teacherId, null);
+    }
+
+    public List<TeacherHistoryResponse> history(Long teacherId, Integer year) {
         if (!teachers.existsById(teacherId)) {
             throw new ResourceNotFoundException("Teacher", teacherId);
         }
 
         List<TeacherHistoryResponse> history = new ArrayList<>();
-        advisors.findByTeacherIdOrderByAssignedAtDescIdDesc(teacherId).stream()
+        advisors.findCurrentByTeacherId(teacherId).stream()
+                .filter(a -> inYear(year, a.getAssignedAt(), a.getCreatedAt()))
                 .map(advisor -> row(advisor.getExpedient(), "Asesor", advisor.getResolution()))
                 .forEach(history::add);
-        juryMembers.findByTeacherIdOrderByIdDesc(teacherId).stream()
+        juryMembers.findCurrentByTeacherId(teacherId).stream()
+                .filter(
+                        j ->
+                                inYear(
+                                        year,
+                                        j.getResolution() == null
+                                                ? null
+                                                : j.getResolution().getResolutionDate(),
+                                        j.getCreatedAt()))
                 .map(
                         jury ->
                                 row(
@@ -49,6 +64,12 @@ public class TeacherHistoryService {
                                         jury.getResolution()))
                 .forEach(history::add);
         return history;
+    }
+
+    private static boolean inYear(Integer year, LocalDate assigned, LocalDateTime created) {
+        if (year == null) return true;
+        var date = assigned != null ? assigned : created == null ? null : created.toLocalDate();
+        return date != null && date.getYear() == year;
     }
 
     private TeacherHistoryResponse row(

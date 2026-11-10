@@ -35,20 +35,21 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
               and (:modalityId is null or m.id = :modalityId)
               and (:year is null or year(e.startDate) = :year)
               and (
-                    :search is null
-                    or lower(e.number) like lower(concat('%', :search, '%'))
-                    or lower(g.firstNames) like lower(concat('%', :search, '%'))
-                    or lower(g.lastNames) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(g.fullName, '')) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(g.documentNumber, '')) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(g.studentCode, '')) like lower(concat('%', :search, '%'))
+                    :search = ''
+                    or lower(cast(function('unaccent', e.number) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', g.firstNames) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', concat(g.firstNames, ' ', g.lastNames)) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', g.lastNames) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(g.documentNumber, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(g.fullName, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(g.studentCode, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
                     or exists (select rw.id from ResearchWork rw where rw.expedient = e
-                               and lower(rw.title) like lower(concat('%', :search, '%')))
-                    or lower(coalesce(s.name, '')) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(g.academicProgram, '')) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(r.number, '')) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(at.fullName, '')) like lower(concat('%', :search, '%'))
-                    or lower(coalesce(jt.fullName, '')) like lower(concat('%', :search, '%'))
+                               and lower(cast(function('unaccent', rw.title) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String)))
+                    or lower(cast(function('unaccent', coalesce(s.name, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(g.academicProgram, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(r.number, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(at.fullName, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(jt.fullName, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
               )
             """;
 
