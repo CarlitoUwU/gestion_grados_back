@@ -51,9 +51,9 @@ public class AccessController {
     @PatchMapping("/{id}/active")
     @Operation(summary = "Activar o desactivar acceso")
     public ResponseEntity<UserResponse> active(
-            @PathVariable Long id, @RequestBody AccessStatusRequest request) {
+            @PathVariable Long id, @Valid @RequestBody AccessStatusRequest request) {
         return ResponseEntity.ok(users.setActive(id, request.active()));
     }
 
-    public record AccessStatusRequest(boolean active) {}
+    public record AccessStatusRequest(@jakarta.validation.constraints.NotNull Boolean active) {}
 }
