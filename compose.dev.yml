@@ -12,7 +12,7 @@ services:
       - "35729:35729"
     volumes:
       - .:/app
-      - ./.gradle/dependencies:/home/gradle/.gradle
+      - gradle-cache:/home/gradle/.gradle
     env_file:
       - path: .env
         required: false
@@ -33,6 +33,10 @@ services:
       - ./postgres_data:/var/lib/postgresql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U root -d postgres" ]
+      start_period: 60s
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
+
+volumes:
+  gradle-cache:

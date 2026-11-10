@@ -8,4 +8,8 @@ public class ResourceNotFoundException extends RuntimeException {
                         ? "Docente no encontrado"
                         : resource + " con id " + id + " no encontrado");
     }
+
+    public ResourceNotFoundException(String resource, String number) {
+        super(resource + " con código " + number + " no encontrado");
+    }
 }

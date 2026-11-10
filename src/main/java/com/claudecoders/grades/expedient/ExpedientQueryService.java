@@ -74,6 +74,41 @@ public class ExpedientQueryService {
                 .toList();
     }
 
+    public ExpedientApiModels.PageResult search(
+            String search,
+            Long schoolId,
+            Long statusId,
+            Long modalityId,
+            Integer year,
+            int page,
+            int size) {
+        String normalizedSearch = search == null || search.isBlank() ? "" : search.trim();
+        var result =
+                expedients.search(
+                        normalizedSearch,
+                        schoolId,
+                        statusId,
+                        modalityId,
+                        year,
+                        org.springframework.data.domain.PageRequest.of(page, size));
+        return new ExpedientApiModels.PageResult(
+                result.getContent().stream().map(this::summary).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isFirst(),
+                result.isLast());
+    }
+
+    public ExpedientApiModels.Detail detail(String number) {
+        var expedient =
+                expedients
+                        .findByNumberIgnoreCase(number.trim())
+                        .orElseThrow(() -> new ResourceNotFoundException("Expedient", number));
+        return detail(expedient.getId());
+    }
+
     public ExpedientApiModels.Summary summary(Long id) {
         var expedient =
                 expedients
@@ -89,8 +124,7 @@ public class ExpedientQueryService {
                         .orElseThrow(() -> new ResourceNotFoundException("Expedient", id));
         List<Resolution> resolutionItems =
                 resolutions.findByExpedientIdOrderByResolutionDateDescIdDesc(id);
-        List<ExpedientAdvisor> advisorItems =
-                advisors.findByExpedientIdOrderByAssignedAtDescIdDesc(id);
+        var advisorItem = advisors.findFirstByExpedientIdOrderByIdDesc(id);
         List<JuryMember> juryItems = juryMembers.findByExpedientIdOrderById(id);
         List<JuryDraw> drawItems = draws.findByExpedientIdOrderByDrawDateDescIdDesc(id);
         Defense defense = defenses.findByExpedientId(id).orElse(null);
@@ -101,7 +135,7 @@ public class ExpedientQueryService {
         return new ExpedientApiModels.Detail(
                 summary(expedient, research, defense),
                 resolutionItems.stream().map(this::resolution).toList(),
-                advisorItems.stream().findFirst().map(this::advisor).orElse(null),
+                advisorItem.map(this::advisor).orElse(null),
                 juryItems.stream().map(this::jury).toList(),
                 drawItems.stream().map(this::draw).toList(),
                 defense == null

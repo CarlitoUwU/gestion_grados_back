@@ -9,20 +9,18 @@ import org.springframework.data.repository.query.Param;
 public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
     boolean existsByNumberIgnoreCase(String number);
 
+    java.util.Optional<Expedient> findByNumberIgnoreCase(String number);
+
+    @org.springframework.data.jpa.repository.Lock(
+            jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Expedient e where lower(e.number) = lower(:number)")
+    java.util.Optional<Expedient> findForUpdateByNumber(@Param("number") String number);
+
     boolean existsByGraduateIdAndIdNot(Long graduateId, Long id);
 
-    @EntityGraph(
-            attributePaths = {
-                "graduate",
-                "graduate.school",
-                "modality",
-                "status",
-                "createdBy",
-                "updatedBy"
-            })
-    @Query(
+    String SEARCH_FILTER =
             """
-            select distinct e from Expedient e
+            from Expedient e
             left join e.graduate g
             left join g.school s
             left join e.modality m
@@ -43,6 +41,8 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
                     or lower(cast(function('unaccent', concat(g.firstNames, ' ', g.lastNames)) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
                     or lower(cast(function('unaccent', g.lastNames) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
                     or lower(cast(function('unaccent', coalesce(g.documentNumber, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(g.fullName, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
+                    or lower(cast(function('unaccent', coalesce(g.studentCode, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
                     or exists (select rw.id from ResearchWork rw where rw.expedient = e
                                and lower(cast(function('unaccent', rw.title) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String)))
                     or lower(cast(function('unaccent', coalesce(s.name, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
@@ -51,12 +51,42 @@ public interface ExpedientRepository extends JpaRepository<Expedient, Long> {
                     or lower(cast(function('unaccent', coalesce(at.fullName, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
                     or lower(cast(function('unaccent', coalesce(jt.fullName, '')) as String)) like lower(cast(function('unaccent', concat('%', :search, '%')) as String))
               )
-            order by e.startDate desc, e.id desc
-            """)
+            """;
+
+    @EntityGraph(
+            attributePaths = {
+                "graduate",
+                "graduate.school",
+                "modality",
+                "status",
+                "createdBy",
+                "updatedBy"
+            })
+    @Query("select distinct e " + SEARCH_FILTER + " order by e.startDate desc, e.id desc")
     List<Expedient> search(
             @Param("search") String search,
             @Param("schoolId") Long schoolId,
             @Param("statusId") Long statusId,
             @Param("modalityId") Long modalityId,
             @Param("year") Integer year);
+
+    @EntityGraph(
+            attributePaths = {
+                "graduate",
+                "graduate.school",
+                "modality",
+                "status",
+                "createdBy",
+                "updatedBy"
+            })
+    @Query(
+            value = "select distinct e " + SEARCH_FILTER + " order by e.startDate desc, e.id desc",
+            countQuery = "select count(distinct e) " + SEARCH_FILTER)
+    org.springframework.data.domain.Page<Expedient> search(
+            @Param("search") String search,
+            @Param("schoolId") Long schoolId,
+            @Param("statusId") Long statusId,
+            @Param("modalityId") Long modalityId,
+            @Param("year") Integer year,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ExpedientAdvisorRepository extends JpaRepository<ExpedientAdvisor, Long> {
+    java.util.Optional<ExpedientAdvisor> findFirstByExpedientIdOrderByIdDesc(Long expedientId);
+
     @Query(
             """
             select a from ExpedientAdvisor a where a.teacher.id = :teacherId

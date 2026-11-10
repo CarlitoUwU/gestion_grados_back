@@ -52,6 +52,7 @@ public class GraduateService {
         v.setDocumentNumber(blankNull(r.documentNumber()));
         v.setFirstNames(r.firstNames().trim());
         v.setLastNames(r.lastNames().trim());
+        v.setFullName(null);
         v.setSchool(refs.school(r.schoolId()));
         v.setAcademicProgram(blankNull(r.academicProgram()));
         return v;

@@ -63,7 +63,7 @@ class ExpedientIntegrationTest {
                         null,
                         null,
                         null,
-                        "Investigación");
+                        "InvestigaciÃ³n");
         String json = mapper.writeValueAsString(java.util.List.of(staged));
         var restored =
                 mapper.readValue(
@@ -90,7 +90,7 @@ class ExpedientIntegrationTest {
         statusOne.setName("Inicio " + suffix);
         statusOne = statuses.save(statusOne);
         ExpedientStatus statusTwo = new ExpedientStatus();
-        statusTwo.setName("Revisión " + suffix);
+        statusTwo.setName("RevisiÃ³n " + suffix);
         statusTwo = statuses.save(statusTwo);
         Teacher teacher = new Teacher();
         teacher.setFullName("Docente " + suffix);
@@ -216,7 +216,7 @@ class ExpedientIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resolutions[0].number").value("R-1"));
         mvc.perform(
-                        post("/api/v1/expedients")
+                        post("/api/v1/expedients/legacy")
                                 .with(jwt().jwt(j -> j.subject(subject)))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(

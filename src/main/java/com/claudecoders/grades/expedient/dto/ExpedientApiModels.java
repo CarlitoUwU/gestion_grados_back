@@ -78,6 +78,15 @@ public final class ExpedientApiModels {
     @Schema(description = "Trabajo de investigación asociado")
     public record ResearchItem(Long id, String title) {}
 
+    public record PageResult(
+            List<Summary> content,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages,
+            boolean first,
+            boolean last) {}
+
     public record ResolutionItem(
             Long id, String number, LocalDate date, String type, String fileUrl) {}
 
