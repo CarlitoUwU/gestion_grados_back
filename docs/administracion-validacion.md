@@ -53,8 +53,10 @@ existentes. Su suite `tests/administracion-backend.spec.ts` comprueba 14 recorri
 plantilla, multipart, confirmación explícita, respuesta perdida, errores, historial,
 altas y activación, autorización y vistas móvil/escritorio.
 
-No se establece una política nueva sobre autodesactivación o último administrador:
-el documento de referencia la deja pendiente de decisión del responsable.
+Autodesactivación (decisión del 2026-11-10): `PATCH /accesses/{id}/active` con
+`active=false` sobre la cuenta de la sesión actual responde 409 y no cambia el
+estado; el frontend ya deshabilitaba esa acción ("Tu cuenta"). Como cada cuenta
+solo puede ser desactivada por otra, siempre queda al menos un administrador activo.
 
 Este cierre abarca Administración. Reportes, Docentes, Expedientes y PDF conservan
 su estado anterior y requieren entregas posteriores. No se ha realizado commit ni push.

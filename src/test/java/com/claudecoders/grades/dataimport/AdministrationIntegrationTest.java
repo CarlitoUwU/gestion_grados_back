@@ -349,6 +349,15 @@ class AdministrationIntegrationTest {
                         .andExpect(status().is(active ? 200 : 403));
             }
         }
+        for (boolean active : List.of(false, true)) {
+            mvc.perform(
+                            patch("/api/v1/accesses/{id}/active", owner.getId())
+                                    .with(auth(owner))
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"active\":" + active + "}"))
+                    .andExpect(status().is(active ? 200 : 409));
+            assertTrue(users.findById(owner.getId()).orElseThrow().isActive());
+        }
         other.setActive(false);
         users.save(other);
         mvc.perform(get("/api/v1/accesses").with(auth(other))).andExpect(status().isForbidden());
