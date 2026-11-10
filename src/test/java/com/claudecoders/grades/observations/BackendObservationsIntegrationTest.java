@@ -496,4 +496,73 @@ class BackendObservationsIntegrationTest {
                         .path("responses")
                         .has("413"));
     }
+
+    @Autowired com.claudecoders.grades.defense.DefenseRepository defenses;
+
+    void defense(Expedient e, LocalDate date, String result) {
+        var d = new com.claudecoders.grades.defense.Defense();
+        d.setExpedient(e);
+        d.setDefenseDate(date);
+        d.setResult(result);
+        defenses.saveAndFlush(d);
+    }
+
+    @Test
+    void reportsIdentifyTeacherAndExcludeFutureOrPendingDefenses() throws Exception {
+        var t = teacher();
+        advisor(expediente("T-" + suffix), t, 2025);
+        var report =
+                json(
+                        mvc.perform(
+                                        get("/api/v1/reports/teachers")
+                                                .with(auth())
+                                                .param("year", "2025"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.columns[7]").value("ID docente"))
+                                .andExpect(jsonPath("$.columns[8]").value("Docente"))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString(StandardCharsets.UTF_8));
+        String number = "T-" + suffix.toUpperCase(java.util.Locale.ROOT);
+        var row = new java.util.ArrayList<JsonNode>();
+        report.path("rows")
+                .forEach(
+                        r -> {
+                            if (number.equals(r.path(0).asString())) row.add(r);
+                        });
+        assertEquals(1, row.size());
+        assertEquals(t.getId(), row.get(0).path(7).asLong());
+        assertEquals(t.getFullName(), row.get(0).path(8).asString());
+        mvc.perform(get("/api/v1/reports/teachers").with(auth()).param("teacherId", "999999999"))
+                .andExpect(status().isNotFound());
+
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        defense(expediente("D1-" + suffix), today.minusDays(1), "Aprobado");
+        defense(expediente("D2-" + suffix), today.plusDays(10), "Aprobado");
+        defense(expediente("D3-" + suffix), today.minusDays(2), "pendiente");
+        defense(expediente("D4-" + suffix), today.minusDays(3), " ");
+        mvc.perform(
+                        get("/api/v1/reports/defended-works")
+                                .with(auth())
+                                .param("schoolId", school.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rows.length()").value(1))
+                .andExpect(
+                        jsonPath("$.rows[0][2]")
+                                .value("D1-" + suffix.toUpperCase(java.util.Locale.ROOT)));
+        mvc.perform(
+                        get("/api/v1/reports/statistics")
+                                .with(auth())
+                                .param("schoolId", school.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.columns[6]").value("Sustentación"))
+                .andExpect(jsonPath("$.columns[7]").value("Resultado"))
+                .andExpect(jsonPath("$.rows.length()").value(5));
+        for (String route : new String[] {"statistics", "draws", "defended-works"}) {
+            mvc.perform(get("/api/v1/reports/" + route).with(auth()).param("year", "99"))
+                    .andExpect(status().isBadRequest());
+            mvc.perform(get("/api/v1/reports/" + route).with(auth()).param("schoolId", "0"))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 }
