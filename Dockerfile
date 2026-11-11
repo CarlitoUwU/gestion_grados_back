@@ -21,7 +21,8 @@ USER spring
 COPY --from=build /app/app.jar app.jar
 
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+# Deja memoria para metaspace, JIT y threads en instancias de 512 MiB.
+ENV JAVA_OPTS="-Xms64m -Xmx192m -XX:+UseSerialGC -XX:ActiveProcessorCount=2"
 EXPOSE 8080
 
 # Si DB_URL no viene definido (p. ej. en Render), se arma desde DB_HOST/DB_PORT/DB_NAME.
