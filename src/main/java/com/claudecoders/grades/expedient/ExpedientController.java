@@ -110,12 +110,26 @@ public class ExpedientController {
             description =
                     "Reemplazo total y atómico: omitir elementos de las listas los elimina; "
                             + "advisor y defense nulos los eliminan. clientId identifica una resolución "
-                            + "en esta petición; resolutionClientId es opcional. fileUrl no se modifica.")
+                            + "en esta petición; resolutionClientId es opcional. fileUrl no se modifica."
+                            + " If-Match (obligatorio) debe ser el ETag de GET /expedients/{id}/detail;"
+                            + " sin cabecera responde 428 y si el expediente cambió, 412, sin modificar datos.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "412",
+            description = "If-Match no coincide con la versión actual del expediente")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "428",
+            description = "Falta la cabecera If-Match")
     public ExpedientApiModels.Detail replaceAcademic(
             @PathVariable Long id,
+            @io.swagger.v3.oas.annotations.Parameter(
+                            description = "ETag obtenido de GET /expedients/{id}/detail")
+                    @org.springframework.web.bind.annotation.RequestHeader(
+                            value = "If-Match",
+                            required = false)
+                    String ifMatch,
             @Valid @RequestBody AcademicRequest request,
             Authentication authentication) {
-        return academic.replace(id, request, authentication);
+        return academic.replace(id, request, authentication, ifMatch);
     }
 
     @PostMapping("/legacy")

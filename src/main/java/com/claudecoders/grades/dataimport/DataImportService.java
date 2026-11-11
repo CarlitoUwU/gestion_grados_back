@@ -249,7 +249,10 @@ public class DataImportService {
 
     @Transactional
     public DataImportResponse confirm(Long id, Authentication authentication) {
-        DataImport dataImport = get(id);
+        DataImport dataImport =
+                repository
+                        .findForConfirmation(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("DataImport", id));
         if (!"PREVIEW".equals(dataImport.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "La importación ya fue confirmada");

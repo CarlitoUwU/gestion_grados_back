@@ -25,7 +25,9 @@ public class WebConfig implements WebMvcConfigurer {
         configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(
+                List.of("Authorization", "Content-Type", "Accept", "If-Match"));
+        configuration.setExposedHeaders(List.of("ETag"));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

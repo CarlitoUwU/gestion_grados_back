@@ -44,6 +44,7 @@ public class ExpedientAcademicService {
     private final DefenseRepository defenses;
     private final ExpedientQueryService queries;
     private final CurrentUserService users;
+    private final ExpedientVersionService versions;
     private final Clock clock;
 
     public ExpedientAcademicService(
@@ -57,6 +58,7 @@ public class ExpedientAcademicService {
             DefenseRepository defenses,
             ExpedientQueryService queries,
             CurrentUserService users,
+            ExpedientVersionService versions,
             Clock clock) {
         this.refs = refs;
         this.expedients = expedients;
@@ -68,12 +70,14 @@ public class ExpedientAcademicService {
         this.defenses = defenses;
         this.queries = queries;
         this.users = users;
+        this.versions = versions;
         this.clock = clock;
     }
 
     @Transactional
     public ExpedientApiModels.Detail replace(
-            Long id, AcademicRequest request, Authentication authentication) {
+            Long id, AcademicRequest request, Authentication authentication, String ifMatch) {
+        versions.requireMatch(id, ifMatch);
         var expedient = refs.expedient(id);
         var user = users.from(authentication);
         var oldResolutions = resolutions.findByExpedientIdOrderByResolutionDateDescIdDesc(id);

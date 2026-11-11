@@ -1,10 +1,13 @@
 package com.claudecoders.grades.user;
 
+import com.claudecoders.grades.shared.exception.BusinessValidationException;
 import com.claudecoders.grades.shared.exception.ConflictException;
 import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.user.dto.UserRequest;
 import com.claudecoders.grades.user.dto.UserResponse;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class UserService {
     private final UserRepository repository;
+    private final String allowedDomains;
 
-    public UserService(UserRepository repository) {
+    public UserService(
+            UserRepository repository,
+            @Value("${app.security.allowed-email-domains:unsa.edu.pe}") String allowedDomains) {
         this.repository = repository;
+        this.allowedDomains = allowedDomains;
     }
 
     public List<UserResponse> findAll() {
@@ -55,6 +62,13 @@ public class UserService {
     }
 
     private void check(UserRequest r, Long id) {
+        String email = r.email().trim().toLowerCase(Locale.ROOT);
+        String domain = email.substring(email.lastIndexOf('@') + 1);
+        if (java.util.Arrays.stream(allowedDomains.split(","))
+                .map(String::trim)
+                .noneMatch(value -> value.replaceFirst("^@", "").equalsIgnoreCase(domain)))
+            throw new BusinessValidationException(
+                    "email", "Utiliza un correo institucional autorizado");
         if (repository.existsByEmailIgnoreCase(r.email().trim()) && !sameEmail(r.email(), id))
             throw new ConflictException("Ya existe un User con ese email");
         if (!"ADMIN_GT".equals(r.role().trim()))
@@ -71,7 +85,7 @@ public class UserService {
     }
 
     private User toEntity(User v, UserRequest r) {
-        v.setEmail(r.email().trim());
+        v.setEmail(r.email().trim().toLowerCase(Locale.ROOT));
         v.setFullName(r.fullName().trim());
         v.setGoogleSubject(blankNull(r.googleSubject()));
         v.setRole(r.role().trim());

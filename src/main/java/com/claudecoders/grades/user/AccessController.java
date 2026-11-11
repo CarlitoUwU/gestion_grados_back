@@ -24,8 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "bearer-jwt")
 public class AccessController {
     private final UserService users;
+    private final com.claudecoders.grades.auth.CurrentUserService currentUser;
 
-    public AccessController(UserService users) {
+    public AccessController(
+            UserService users, com.claudecoders.grades.auth.CurrentUserService currentUser) {
+        this.currentUser = currentUser;
         this.users = users;
     }
 
@@ -49,11 +52,22 @@ public class AccessController {
     }
 
     @PatchMapping("/{id}/active")
-    @Operation(summary = "Activar o desactivar acceso")
+    @Operation(
+            summary = "Activar o desactivar acceso",
+            description = "Un administrador no puede desactivar su propia cuenta (409).")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409",
+            description = "Intento de desactivar la cuenta de la sesión actual")
     public ResponseEntity<UserResponse> active(
-            @PathVariable Long id, @RequestBody AccessStatusRequest request) {
+            @PathVariable Long id,
+            @Valid @RequestBody AccessStatusRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        if (!request.active() && id.equals(currentUser.from(authentication).getId()))
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "No puedes desactivar tu propia cuenta. Pide a otro administrador que lo haga.");
         return ResponseEntity.ok(users.setActive(id, request.active()));
     }
 
-    public record AccessStatusRequest(boolean active) {}
+    public record AccessStatusRequest(@jakarta.validation.constraints.NotNull Boolean active) {}
 }
