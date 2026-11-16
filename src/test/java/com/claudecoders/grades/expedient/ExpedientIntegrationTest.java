@@ -178,6 +178,7 @@ class ExpedientIntegrationTest {
         mvc.perform(
                         put("/api/v1/expedients/{id}/academic", id)
                                 .with(jwt().jwt(j -> j.subject(subject)))
+                                .header("If-Match", etag(id, subject))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(academic))
                 .andExpect(status().isOk())
@@ -195,6 +196,7 @@ class ExpedientIntegrationTest {
         mvc.perform(
                         put("/api/v1/expedients/{id}/academic", id)
                                 .with(jwt().jwt(j -> j.subject(subject)))
+                                .header("If-Match", etag(id, subject))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(retained))
                 .andExpect(status().isOk())
@@ -206,6 +208,7 @@ class ExpedientIntegrationTest {
         mvc.perform(
                         put("/api/v1/expedients/{id}/academic", id)
                                 .with(jwt().jwt(j -> j.subject(subject)))
+                                .header("If-Match", etag(id, subject))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(invalid))
                 .andExpect(status().isBadRequest())
@@ -236,6 +239,7 @@ class ExpedientIntegrationTest {
         mvc.perform(
                         put("/api/v1/expedients/{id}/academic", id)
                                 .with(jwt().jwt(j -> j.subject(subject)))
+                                .header("If-Match", etag(id, subject))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         "{\"resolutions\":[],\"jury\":null,\"draws\":[],\"advisor\":null,\"defense\":null}"))
@@ -243,5 +247,15 @@ class ExpedientIntegrationTest {
                 .andExpect(jsonPath("$.resolutions.length()").value(0));
         mvc.perform(get("/api/v1/catalogs/schools").with(jwt().jwt(j -> j.subject(subject))))
                 .andExpect(status().isOk());
+    }
+
+    private String etag(long id, String subject) throws Exception {
+        return mvc.perform(
+                        get("/api/v1/expedients/{id}/detail", id)
+                                .with(jwt().jwt(j -> j.subject(subject))))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getHeader("ETag");
     }
 }

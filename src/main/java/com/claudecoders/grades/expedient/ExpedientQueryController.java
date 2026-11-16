@@ -18,9 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "bearer-jwt")
 public class ExpedientQueryController {
     private final ExpedientQueryService service;
+    private final ExpedientVersionService versions;
 
-    public ExpedientQueryController(ExpedientQueryService service) {
+    public ExpedientQueryController(
+            ExpedientQueryService service, ExpedientVersionService versions) {
         this.service = service;
+        this.versions = versions;
     }
 
     @GetMapping("/search")
@@ -41,8 +44,15 @@ public class ExpedientQueryController {
 
     @GetMapping("/{id}/detail")
     @Operation(
-            summary = "Obtener expediente con resoluciones, asesor, jurado, sorteos y sustentación")
-    public ExpedientApiModels.Detail detail(@PathVariable Long id) {
-        return service.detail(id);
+            summary = "Obtener expediente con resoluciones, asesor, jurado, sorteos y sustentación",
+            description =
+                    "La cabecera ETag identifica la versión del agregado; enviarla como If-Match"
+                            + " en PUT /expedients/{id}/academic evita sobrescribir cambios ajenos.")
+    public org.springframework.http.ResponseEntity<ExpedientApiModels.Detail> detail(
+            @PathVariable Long id) {
+        var detail = service.detail(id);
+        return org.springframework.http.ResponseEntity.ok()
+                .eTag(versions.etag(detail))
+                .body(detail);
     }
 }

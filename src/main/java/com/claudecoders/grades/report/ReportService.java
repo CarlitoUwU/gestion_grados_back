@@ -1,9 +1,14 @@
 package com.claudecoders.grades.report;
 
 import com.claudecoders.grades.expedient.ExpedientQueryService;
+import com.claudecoders.grades.shared.exception.ResourceNotFoundException;
 import com.claudecoders.grades.teacher.TeacherHistoryService;
 import com.claudecoders.grades.teacher.TeacherRepository;
+import java.text.Normalizer;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,21 +18,32 @@ public class ReportService {
     private final ExpedientQueryService expedients;
     private final TeacherHistoryService teacherHistory;
     private final TeacherRepository teachers;
+    private final Clock clock;
 
     public ReportService(
             ExpedientQueryService expedients,
             TeacherHistoryService teacherHistory,
-            TeacherRepository teachers) {
+            TeacherRepository teachers,
+            Clock clock) {
         this.expedients = expedients;
         this.teacherHistory = teacherHistory;
         this.teachers = teachers;
+        this.clock = clock;
     }
 
     public ReportResponse statistics(Integer year, Long schoolId, Long modalityId) {
         var records = expedients.search(null, schoolId, null, modalityId, year);
         return new ReportResponse(
                 "Estadísticas para acreditación",
-                List.of("Expediente", "Graduando", "Escuela", "Modalidad", "Estado", "Inicio"),
+                List.of(
+                        "Expediente",
+                        "Graduando",
+                        "Escuela",
+                        "Modalidad",
+                        "Estado",
+                        "Inicio",
+                        "Sustentación",
+                        "Resultado"),
                 records.stream()
                         .map(
                                 r ->
@@ -37,21 +53,42 @@ public class ReportService {
                                                 value(r.schoolName()),
                                                 value(r.modalityName()),
                                                 value(r.statusName()),
-                                                r.startDate()))
+                                                r.startDate(),
+                                                r.defenseDate(),
+                                                value(r.defenseResult())))
                         .toList());
     }
 
     public ReportResponse teachers(Long teacherId, Integer year) {
-        var history =
+        var selected =
                 teacherId == null
-                        ? teachers.findAll().stream()
-                                .flatMap(
-                                        teacher ->
-                                                teacherHistory
-                                                        .history(teacher.getId(), year)
-                                                        .stream())
-                                .toList()
-                        : teacherHistory.history(teacherId, year);
+                        ? teachers.findAll()
+                        : List.of(
+                                teachers.findById(teacherId)
+                                        .orElseThrow(
+                                                () ->
+                                                        new ResourceNotFoundException(
+                                                                "Teacher", teacherId)));
+        var rows =
+                selected.stream()
+                        .flatMap(
+                                teacher ->
+                                        teacherHistory.history(teacher.getId(), year).stream()
+                                                .map(
+                                                        h ->
+                                                                java.util.Arrays.<Object>asList(
+                                                                        h.expedientNumber(),
+                                                                        h.graduateName(),
+                                                                        value(h.researchTitle()),
+                                                                        value(h.schoolName()),
+                                                                        h.participation(),
+                                                                        value(h.resolutionNumber()),
+                                                                        h.resolutionDate(),
+                                                                        teacher.getId(),
+                                                                        value(
+                                                                                teacher
+                                                                                        .getFullName()))))
+                        .toList();
         return new ReportResponse(
                 "Asesores y jurados",
                 List.of(
@@ -61,27 +98,20 @@ public class ReportService {
                         "Escuela",
                         "Participación",
                         "Resolución",
-                        "Fecha resolución"),
-                history.stream()
-                        .map(
-                                h ->
-                                        java.util.Arrays.<Object>asList(
-                                                h.expedientNumber(),
-                                                h.graduateName(),
-                                                value(h.researchTitle()),
-                                                value(h.schoolName()),
-                                                h.participation(),
-                                                value(h.resolutionNumber()),
-                                                h.resolutionDate()))
-                        .toList());
+                        "Fecha resolución",
+                        "ID docente",
+                        "Docente"),
+                rows);
     }
 
     public ReportResponse defendedWorks(Integer year, Long schoolId, Long modalityId) {
+        LocalDate asOfDate = LocalDate.now(clock);
         var records =
                 expedients.search(null, schoolId, null, modalityId, null).stream()
                         .filter(r -> r.defenseDate() != null)
+                        .filter(r -> !r.defenseDate().isAfter(asOfDate))
                         .filter(r -> year == null || r.defenseDate().getYear() == year)
-                        .filter(r -> !"Pendiente".equalsIgnoreCase(value(r.defenseResult())))
+                        .filter(r -> isDefended(r.defenseResult()))
                         .toList();
         return new ReportResponse(
                 "Trabajos sustentados",
@@ -153,6 +183,14 @@ public class ReportService {
                                                                                 draw
                                                                                         .resolutionNumber()))))
                         .toList());
+    }
+
+    private static boolean isDefended(String result) {
+        if (result == null || result.isBlank()) return false;
+        var normalized =
+                Normalizer.normalize(result.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+                        .replaceAll("\\p{M}+", "");
+        return !"pendiente".equals(normalized);
     }
 
     private String value(String value) {

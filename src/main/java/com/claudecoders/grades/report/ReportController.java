@@ -27,14 +27,18 @@ public class ReportController {
     @GetMapping("/statistics")
     @Operation(summary = "Reporte de estadísticas para acreditación")
     public ReportResponse statistics(
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long schoolId,
-            @RequestParam(required = false) Long modalityId) {
+            @RequestParam(required = false) @Min(1900) @Max(9999) Integer year,
+            @RequestParam(required = false) @Positive Long schoolId,
+            @RequestParam(required = false) @Positive Long modalityId) {
         return service.statistics(year, schoolId, modalityId);
     }
 
     @GetMapping("/teachers")
-    @Operation(summary = "Reporte de participaciones de un docente")
+    @Operation(
+            summary = "Reporte de participaciones de docentes",
+            description =
+                    "Sin teacherId devuelve todos los docentes; cada fila incluye ID docente y"
+                            + " Docente. year filtra por fecha de designación.")
     public ReportResponse teachers(
             @RequestParam(required = false) @Positive Long teacherId,
             @RequestParam(required = false) @Min(1000) @Max(9999) Integer year) {
@@ -44,17 +48,21 @@ public class ReportController {
     @GetMapping("/draws")
     @Operation(summary = "Reporte de sorteos externos")
     public ReportResponse draws(
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long schoolId) {
+            @RequestParam(required = false) @Min(1900) @Max(9999) Integer year,
+            @RequestParam(required = false) @Positive Long schoolId) {
         return service.draws(year, schoolId);
     }
 
     @GetMapping("/defended-works")
-    @Operation(summary = "Reporte de trabajos sustentados")
+    @Operation(
+            summary = "Reporte de trabajos sustentados",
+            description =
+                    "Incluye sustentaciones hasta la fecha actual (America/Lima) con resultado"
+                            + " registrado distinto de Pendiente.")
     public ReportResponse defendedWorks(
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Long schoolId,
-            @RequestParam(required = false) Long modalityId) {
+            @RequestParam(required = false) @Min(1900) @Max(9999) Integer year,
+            @RequestParam(required = false) @Positive Long schoolId,
+            @RequestParam(required = false) @Positive Long modalityId) {
         return service.defendedWorks(year, schoolId, modalityId);
     }
 }

@@ -381,7 +381,9 @@ esquema `ApiError` y las respuestas 400/401/403/404/409/500 de las rutas de nego
   para que las URLs generadas correspondan a la dirección externa.
 - Los PUT existentes mantienen su contrato: el CRUD guarda `fileUrl` recibido;
   el reemplazo académico preserva el documento de las resoluciones conservadas
-  por ID. No se ha modificado el frontend ni activado su feature flag.
+  por ID. El frontend lo consume desde el 2026-11-10 (descarga autenticada, 10 MiB).
+- `GET /api/v1/expedients/{id}/detail` devuelve `ETag`; `PUT /api/v1/expedients/{id}/academic`
+  exige `If-Match` con ese ETag: 428 sin cabecera, 412 si el expediente cambió desde esa lectura.
 
 La verificación automática está en `.github/workflows/backend.yml`: Java 25,
 PostgreSQL 18, `gradlew check` y publicación del informe de pruebas. Las nuevas

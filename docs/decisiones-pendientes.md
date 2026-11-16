@@ -53,6 +53,10 @@ QA con datos reales. No se consideran una decisión de negocio cerrada:
 | `recentExpedients` | Hasta 8 por `updatedAt` DESC, nulos al final, ID DESC como desempate. |
 | `defended` | Fecha hasta el corte inclusive y resultado no nulo, no vacío y distinto de `Pendiente`. |
 
+**Decisión provisional (2026-11-10):** mientras PO no confirme, el año de los
+reportes y del panel es el **año de inicio** del expediente (`startDate`). Las
+estadísticas de graduados no distinguen aún año de egreso.
+
 Si PO ratifica otro criterio, deben actualizarse conjuntamente el servicio, la
 consulta SQL de comparación y este contrato. El frontend muestra lo que responde
 la API; no se renombraron campos ni se envolvieron arrays en objetos.
@@ -65,13 +69,23 @@ la API; no se renombraron campos ni se envolvieron arrays en objetos.
    - El documento se almacena en PostgreSQL. Ver README para validaciones y
      respuestas 400/404/413. El frontend no se modifica.
 
-2. **Concurrencia optimista del reemplazo académico**
-   - Propuesta: `ETag` fuerte en `GET /expedients/{id}/detail` e `If-Match`
-     obligatorio en `PUT /expedients/{id}/academic`.
-   - Decisión pendiente: coordinación con frontend y migración por etapas. El
-     cliente actual no envía `If-Match`; no se puede exigir sin romperlo. Toda
-     mutación del agregado (incluido CRUD de resoluciones) deberá invalidar la
-     versión cuando se implemente.
+2. **Concurrencia optimista del reemplazo académico — implementada el 2026-11-10**
+   - `GET /expedients/{id}/detail` devuelve un `ETag` fuerte calculado sobre el
+     detalle completo; cualquier mutación del agregado (datos generales, CRUD de
+     resoluciones, asesor, jurado, sorteos, sustentación, PDF) cambia la versión.
+   - `PUT /expedients/{id}/academic` exige `If-Match` (decisión del 2026-11-10): sin
+     cabecera responde 428. Con cabecera bloquea la fila del expediente, compara la
+     versión y responde 412 sin modificar datos si no coincide; `*` solo exige que
+     exista.
+   - CORS permite `If-Match` y expone `ETag`. El frontend envía la versión leída antes
+     de cada reemplazo académico y trata el 412 como sección modificada.
+   - Los clientes que integren `/academic` deben leer antes el detalle y reenviar
+     su `ETag`; el navegador lo recibe gracias a `Access-Control-Expose-Headers`.
+
+3. **Documento digital en el frontend — integrado el 2026-11-10**
+   - El control de subida está activo por defecto (`VITE_FEATURE_RESOLUTION_PDF=false`
+     lo oculta), con el límite de 10 MiB del backend. Los PDF almacenados se
+     descargan con Bearer JWT; los enlaces externos siguen abriéndose como antes.
 
 ## Límites que no se agregaron como bloqueantes
 

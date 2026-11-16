@@ -29,7 +29,9 @@ public class DataImportController {
     @Operation(summary = "Previsualizar importación histórica XLSX")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Previsualización generada"),
-        @ApiResponse(responseCode = "400", description = "Archivo o estructura inválidos")
+        @ApiResponse(
+                responseCode = "400",
+                description = "Archivo o estructura inválidos; ApiError conserva el motivo")
     })
     public ResponseEntity<com.claudecoders.grades.dataimport.dto.ImportPreviewResponse> preview(
             @RequestPart("file") MultipartFile file, Authentication authentication) {
@@ -40,6 +42,7 @@ public class DataImportController {
     @Operation(summary = "Confirmar importación histórica")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Importación confirmada"),
+        @ApiResponse(responseCode = "403", description = "El lote pertenece a otro usuario"),
         @ApiResponse(responseCode = "404", description = "Previsualización no encontrada"),
         @ApiResponse(
                 responseCode = "409",
